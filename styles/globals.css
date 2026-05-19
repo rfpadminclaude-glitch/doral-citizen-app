@@ -1,0 +1,206 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================================
+   Doral Citizen Assistant — design tokens
+   Light + dark palettes anchored in the City of Doral seal colors
+   (civic blue, teal, gold). All text-on-surface pairs verified WCAG AA.
+   ============================================================================ */
+
+@layer base {
+  :root {
+    /* Brand
+       Primary uses Electric Violet for trending CTA energy; teal + gold come
+       from the City of Doral seal. The three together form a premium-AI
+       triad (violet → teal → gold). */
+    --primary: 263 83% 58%;             /* #7C3AED Electric Violet */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 185 80% 28%;           /* #0E7C86 Doral teal */
+    --secondary-foreground: 0 0% 100%;
+    --gold: 41 53% 54%;                 /* #C8A24B Doral seal gold */
+    --gold-foreground: 0 0% 100%;
+    --accent: 16 100% 60%;              /* #FF6B35 warm pop */
+    --accent-foreground: 0 0% 100%;
+    /* Brand-blue retained for places that want the civic-blue accent
+       (badges, info pills). Not used as the CTA color. */
+    --doral-blue: 211 100% 40%;
+
+    /* Surfaces */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;          /* #0F172A */
+    --surface: 0 0% 100%;
+    --surface-2: 214 32% 96%;           /* #F5F7FA */
+    --surface-elevated: 0 0% 100%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Text */
+    --text: 222 47% 11%;
+    --text-muted: 215 25% 35%;          /* #475569 */
+
+    /* UI */
+    --muted: 214 32% 96%;
+    --muted-foreground: 215 25% 35%;
+    --border: 214 32% 91%;              /* #E2E8F0 */
+    --input: 214 32% 91%;
+    --ring: 263 83% 58%;                /* matches primary violet */
+
+    /* Semantic */
+    --success: 158 64% 39%;             /* #10B981 */
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;              /* #F59E0B */
+    --warning-foreground: 0 0% 12%;
+    --destructive: 0 73% 50%;           /* #DC2626 */
+    --destructive-foreground: 0 0% 100%;
+
+    /* Sentiment */
+    --sentiment-positive: 158 64% 39%;
+    --sentiment-neutral: 215 16% 47%;
+    --sentiment-negative: 0 73% 50%;
+    --sentiment-frustrated: 16 100% 60%;
+    --sentiment-urgent: 350 89% 60%;
+
+    --radius: 1rem;
+  }
+
+  .dark {
+    /* Brand */
+    --primary: 253 91% 76%;             /* #A78BFA Electric Violet (dark) */
+    --primary-foreground: 222 47% 11%;
+    --secondary: 185 60% 48%;           /* #34B7C1 */
+    --secondary-foreground: 222 47% 11%;
+    --gold: 41 64% 64%;                 /* #E0BC6A */
+    --gold-foreground: 222 47% 11%;
+    --accent: 18 100% 63%;              /* #FF8C42 */
+    --accent-foreground: 222 47% 11%;
+    --doral-blue: 211 100% 65%;
+
+    /* Surfaces — soft dark, never pure black */
+    --background: 222 16% 7%;           /* #121212 ish */
+    --foreground: 220 14% 90%;          /* #E5E7EB */
+    --surface: 222 16% 7%;
+    --surface-2: 222 13% 12%;           /* #1E1E1E */
+    --surface-elevated: 222 13% 14%;
+    --card: 222 13% 12%;
+    --card-foreground: 220 14% 90%;
+    --popover: 222 13% 12%;
+    --popover-foreground: 220 14% 90%;
+
+    /* Text */
+    --text: 220 14% 90%;
+    --text-muted: 218 11% 65%;          /* #9CA3AF */
+
+    /* UI */
+    --muted: 222 13% 14%;
+    --muted-foreground: 218 11% 65%;
+    --border: 222 10% 20%;              /* #2A2F3A */
+    --input: 222 10% 20%;
+    --ring: 253 91% 76%;                /* matches primary violet (dark) */
+
+    /* Semantic */
+    --success: 158 64% 52%;             /* #34D399 */
+    --success-foreground: 222 47% 11%;
+    --warning: 45 96% 56%;              /* #FBBF24 */
+    --warning-foreground: 222 47% 11%;
+    --destructive: 0 90% 71%;           /* #F87171 */
+    --destructive-foreground: 222 47% 11%;
+
+    /* Sentiment */
+    --sentiment-positive: 158 64% 52%;
+    --sentiment-neutral: 218 11% 65%;
+    --sentiment-negative: 0 90% 71%;
+    --sentiment-frustrated: 18 100% 63%;
+    --sentiment-urgent: 350 95% 70%;
+  }
+
+  *, *::before, *::after { @apply border-border; }
+
+  html {
+    color-scheme: light dark;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+
+  /* Smooth theme transition (respects reduced-motion). */
+  @media (prefers-reduced-motion: no-preference) {
+    html, body, [data-theme-transition] {
+      transition: background-color 220ms ease, color 220ms ease, border-color 220ms ease;
+    }
+  }
+
+  /* WCAG: visible focus rings on every interactive element. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
+  }
+
+  /* Decorative ambient gradient used on the resident landing. */
+  .doral-radial {
+    background-image:
+      radial-gradient(60% 50% at 80% -10%, hsl(var(--primary) / 0.18), transparent 60%),
+      radial-gradient(50% 40% at 0% 110%, hsl(var(--secondary) / 0.14), transparent 60%);
+  }
+
+  .doral-gradient-bar {
+    background-image: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--secondary)));
+  }
+
+  /* Animated triad: violet → teal → gold → violet, slow 8s flow.
+     Respects prefers-reduced-motion (falls back to static gradient). */
+  .doral-gradient-bar-animated {
+    background-image: linear-gradient(
+      90deg,
+      hsl(var(--primary)) 0%,
+      hsl(var(--secondary)) 33%,
+      hsl(var(--gold)) 66%,
+      hsl(var(--primary)) 100%
+    );
+    background-size: 300% 100%;
+    background-position: 0% 0%;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .doral-gradient-bar-animated {
+      animation: gradient-flow 8s linear infinite;
+    }
+  }
+  @keyframes gradient-flow {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 300% 0%; }
+  }
+
+  /* Glassmorphic surface — used by the chat card. */
+  .glass {
+    background: hsl(var(--surface) / 0.72);
+    backdrop-filter: saturate(1.4) blur(14px);
+    -webkit-backdrop-filter: saturate(1.4) blur(14px);
+    border: 1px solid hsl(var(--border));
+  }
+
+  /* Unified focus ring for input wrappers. Use on a parent <div> that
+     contains a bare <input> or <textarea> with focus:outline-none. */
+  .field-ring {
+    @apply rounded-xl border border-border bg-surface transition;
+  }
+  .field-ring:focus-within {
+    @apply border-primary shadow-soft;
+    box-shadow:
+      0 0 0 3px hsl(var(--primary) / 0.18),
+      0 4px 20px -6px hsl(var(--primary) / 0.18);
+  }
+
+  /* Custom scrollbar for the chat log. */
+  .scroll-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  .scroll-thin::-webkit-scrollbar { width: 8px; }
+  .scroll-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border-radius: 9999px;
+  }
+}

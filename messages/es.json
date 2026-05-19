@@ -1,0 +1,48 @@
+{
+  "chat": {
+    "title": "Asistente de Doral",
+    "subtitle": "Pregúntame cualquier cosa sobre los servicios de la ciudad.",
+    "welcome": "¡Hola! Puedo ayudarte a encontrar servicios de la ciudad. Prueba uno de estos:",
+    "suggestions": {
+      "permit": "¿Cómo renuevo mi permiso de negocio?",
+      "hours": "¿Cuál es el horario del Ayuntamiento?",
+      "trash": "¿Cuándo recogen la basura en mi calle?"
+    },
+    "placeholder": "Escribe tu pregunta…",
+    "send": "Enviar",
+    "sending": "Enviando…",
+    "newMessage": "Nuevo mensaje del asistente",
+    "errorTitle": "Tenemos problemas en este momento.",
+    "errorBody": "Intenta de nuevo en un momento o llama al 311.",
+    "langToggle": "Idioma",
+    "langEn": "English",
+    "langEs": "Español",
+    "feedback": {
+      "helpful": "¿Fue útil?",
+      "yes": "Sí",
+      "no": "No",
+      "thanks": "Gracias por tus comentarios."
+    }
+  },
+  "admin": {
+    "login": {
+      "title": "Acceso de administrador",
+      "email": "Correo electrónico",
+      "password": "Contraseña",
+      "submit": "Iniciar sesión",
+      "error": "Correo o contraseña inválidos.",
+      "loading": "Iniciando sesión…"
+    },
+    "nav": {
+      "dashboard": "Panel",
+      "conversations": "Conversaciones",
+      "requests": "Solicitudes",
+      "knowledge": "Base de conocimiento",
+      "announcements": "Anuncios",
+      "analytics": "Análisis",
+      "audit": "Auditoría",
+      "social": "Redes sociales",
+      "logout": "Cerrar sesión"
+    }
+  }
+}

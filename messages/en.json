@@ -1,0 +1,48 @@
+{
+  "chat": {
+    "title": "Doral Assistant",
+    "subtitle": "Ask me anything about city services.",
+    "welcome": "Hi! I can help you find city services. Try one of these:",
+    "suggestions": {
+      "permit": "How do I renew my business permit?",
+      "hours": "What are City Hall hours?",
+      "trash": "When is trash pickup on my street?"
+    },
+    "placeholder": "Type your question…",
+    "send": "Send",
+    "sending": "Sending…",
+    "newMessage": "New message from assistant",
+    "errorTitle": "We're having trouble right now.",
+    "errorBody": "Try again in a moment or call 311.",
+    "langToggle": "Language",
+    "langEn": "English",
+    "langEs": "Español",
+    "feedback": {
+      "helpful": "Was this helpful?",
+      "yes": "Yes",
+      "no": "No",
+      "thanks": "Thanks for the feedback."
+    }
+  },
+  "admin": {
+    "login": {
+      "title": "Admin sign-in",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "error": "Invalid email or password.",
+      "loading": "Signing in…"
+    },
+    "nav": {
+      "dashboard": "Dashboard",
+      "conversations": "Conversations",
+      "requests": "Service requests",
+      "knowledge": "Knowledge base",
+      "announcements": "Announcements",
+      "analytics": "Analytics",
+      "audit": "Audit log",
+      "social": "Social",
+      "logout": "Sign out"
+    }
+  }
+}
