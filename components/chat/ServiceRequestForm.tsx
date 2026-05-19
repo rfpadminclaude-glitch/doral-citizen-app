@@ -4,25 +4,38 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   Check,
   CheckCircle2,
+  ClipboardCheck,
+  Construction,
   Copy,
   FileText,
   FileWarning,
   Loader2,
   Mail,
   MapPin,
+  Megaphone,
   Phone,
   TreePine,
+  Wrench,
   X
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Select, type SelectOption } from '@/components/ui/Select';
 import { cn } from '@/lib/utils';
 
-type RequestType = 'permit' | 'code_violation' | 'park_issue' | 'general';
+export type RequestType =
+  | 'permit'
+  | 'code_violation'
+  | 'park_issue'
+  | 'general'
+  | 'pothole'
+  | 'inspection'
+  | 'complaint';
 
 type Props = {
   sessionId: string;
   lang: 'en' | 'es';
+  /** Pre-selected request_type when the form is launched from a quick-action card. */
+  initialType?: RequestType;
   onSubmitted: (msg: SubmittedMessage) => void;
   onDismiss: () => void;
 };
@@ -43,7 +56,10 @@ const STRINGS = {
       permit: { label: 'Permits / business tax', description: 'Issues with a permit or BTR' },
       code_violation: { label: 'Code violation', description: 'Tall grass, illegal dumping, signs in right-of-way' },
       park_issue: { label: 'Parks / facilities', description: 'Damage, vandalism, missing equipment' },
-      general: { label: 'General', description: 'Anything else' }
+      general: { label: 'General', description: 'Anything else' },
+      pothole: { label: 'Pothole / road surface', description: 'Pothole, sinkhole, damaged pavement' },
+      inspection: { label: 'Inspection request', description: 'Schedule a property or construction inspection' },
+      complaint: { label: 'Complaint', description: 'A concern that isn\'t a code violation' }
     } satisfies Record<RequestType, { label: string; description: string }>,
     titleField: 'Title',
     titlePlaceholder: 'Pothole on NW 50th',
@@ -75,7 +91,10 @@ const STRINGS = {
       permit: { label: 'Permisos / impuesto de negocio', description: 'Problemas con un permiso o BTR' },
       code_violation: { label: 'Infracción del código', description: 'Pasto alto, vertido ilegal, letreros en la vía' },
       park_issue: { label: 'Parques / instalaciones', description: 'Daños, vandalismo, equipo faltante' },
-      general: { label: 'General', description: 'Cualquier otra cosa' }
+      general: { label: 'General', description: 'Cualquier otra cosa' },
+      pothole: { label: 'Bache / superficie de calle', description: 'Bache, hundimiento, pavimento dañado' },
+      inspection: { label: 'Solicitud de inspección', description: 'Programar una inspección de propiedad o construcción' },
+      complaint: { label: 'Queja', description: 'Una inquietud que no es una infracción del código' }
     } satisfies Record<RequestType, { label: string; description: string }>,
     titleField: 'Título',
     titlePlaceholder: 'Bache en NW 50th',
@@ -105,7 +124,10 @@ const TYPE_ICONS: Record<RequestType, React.ReactNode> = {
   permit: <FileText className="h-4 w-4 text-primary" />,
   code_violation: <FileWarning className="h-4 w-4 text-accent" />,
   park_issue: <TreePine className="h-4 w-4 text-secondary" />,
-  general: <MapPin className="h-4 w-4 text-gold" />
+  general: <MapPin className="h-4 w-4 text-gold" />,
+  pothole: <Construction className="h-4 w-4 text-accent" />,
+  inspection: <ClipboardCheck className="h-4 w-4 text-secondary" />,
+  complaint: <Megaphone className="h-4 w-4 text-destructive" />
 };
 
 function detectContactKind(s: string): 'phone' | 'email' | null {
@@ -116,10 +138,10 @@ function detectContactKind(s: string): 'phone' | 'email' | null {
   return null;
 }
 
-export function ServiceRequestForm({ sessionId, lang, onSubmitted, onDismiss }: Props) {
+export function ServiceRequestForm({ sessionId, lang, initialType, onSubmitted, onDismiss }: Props) {
   const s = STRINGS[lang];
 
-  const [type, setType] = useState<RequestType>('general');
+  const [type, setType] = useState<RequestType>(initialType ?? 'general');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [name, setName] = useState('');
@@ -168,7 +190,15 @@ export function ServiceRequestForm({ sessionId, lang, onSubmitted, onDismiss }: 
   }
 
   const typeOptions: SelectOption<RequestType>[] = (
-    ['permit', 'code_violation', 'park_issue', 'general'] as const
+    [
+      'permit',
+      'code_violation',
+      'park_issue',
+      'pothole',
+      'inspection',
+      'complaint',
+      'general'
+    ] as const
   ).map((v) => ({
     value: v,
     label: s.typeOptions[v].label,

@@ -29,6 +29,21 @@
     "justNow": "just now",
     "kbdHint": "Press <kbd>Enter</kbd> to send · <kbd>Shift</kbd>+<kbd>Enter</kbd> for newline · For emergencies dial <strong>911</strong>",
     "saveCodeLabel": "Save this code",
+    "quickActions": {
+      "title": "Quick actions",
+      "subtitle": "Or jump straight into one of these:",
+      "pothole": "Report a pothole",
+      "potholeDesc": "Damaged road or sidewalk",
+      "complaint": "Submit a complaint",
+      "complaintDesc": "Tell us what's going wrong",
+      "inspection": "Request an inspection",
+      "inspectionDesc": "Property or construction",
+      "ticket": "Create a service ticket",
+      "ticketDesc": "Anything else we can track",
+      "permits": "Ask about permits",
+      "permitsDesc": "Renewals, BTR, applications",
+      "permitsPrompt": "I have a question about a permit."
+    },
     "feedback": {
       "helpful": "Was this helpful?",
       "yes": "Yes",

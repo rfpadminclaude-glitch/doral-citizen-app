@@ -29,6 +29,21 @@
     "justNow": "ahora",
     "kbdHint": "Presiona <kbd>Enter</kbd> para enviar · <kbd>Shift</kbd>+<kbd>Enter</kbd> para nueva línea · Para emergencias marca <strong>911</strong>",
     "saveCodeLabel": "Guarda este código",
+    "quickActions": {
+      "title": "Acciones rápidas",
+      "subtitle": "O ve directamente a una de estas:",
+      "pothole": "Reportar un bache",
+      "potholeDesc": "Calle o acera dañada",
+      "complaint": "Enviar una queja",
+      "complaintDesc": "Cuéntanos qué está mal",
+      "inspection": "Solicitar una inspección",
+      "inspectionDesc": "Propiedad o construcción",
+      "ticket": "Crear un caso",
+      "ticketDesc": "Cualquier otra cosa que podamos rastrear",
+      "permits": "Preguntas sobre permisos",
+      "permitsDesc": "Renovaciones, BTR, solicitudes",
+      "permitsPrompt": "Tengo una pregunta sobre un permiso."
+    },
     "feedback": {
       "helpful": "¿Fue útil?",
       "yes": "Sí",

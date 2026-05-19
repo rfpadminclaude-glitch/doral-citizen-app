@@ -7,7 +7,15 @@ export const dynamic = 'force-dynamic';
 
 const Body = z.object({
   conversation_session_id: z.string().min(1),
-  request_type: z.enum(['permit', 'code_violation', 'park_issue', 'general']),
+  request_type: z.enum([
+    'permit',
+    'code_violation',
+    'park_issue',
+    'general',
+    'pothole',
+    'inspection',
+    'complaint'
+  ]),
   title: z.string().min(3).max(160),
   description: z.string().min(10).max(2000),
   resident_name: z.string().min(1).max(160),

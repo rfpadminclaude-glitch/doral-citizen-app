@@ -1,7 +1,20 @@
 'use client';
 
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
-import { ArrowUp, Check, Copy, History, MessageSquarePlus, RefreshCw, User } from 'lucide-react';
+import {
+  ArrowUp,
+  Check,
+  ClipboardCheck,
+  Construction,
+  Copy,
+  FileText,
+  History,
+  Megaphone,
+  MessageSquarePlus,
+  RefreshCw,
+  User,
+  Wrench
+} from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -17,7 +30,7 @@ import { HistoryDrawer } from './HistoryDrawer';
 import { IdleEntertainment } from './IdleEntertainment';
 import { NameCaptureCard } from './NameCaptureCard';
 import { ProfileDrawer } from './ProfileDrawer';
-import { ServiceRequestForm, type SubmittedMessage } from './ServiceRequestForm';
+import { ServiceRequestForm, type RequestType, type SubmittedMessage } from './ServiceRequestForm';
 import { SkylineIllustration } from './SkylineIllustration';
 import { useIdle } from '@/lib/chat/useIdle';
 
@@ -147,6 +160,46 @@ function renderWithCitations(content: string, sources?: Source[]): React.ReactNo
   return out.length > 0 ? out : content;
 }
 
+/**
+ * Compact button card used on the welcome screen for "Report pothole",
+ * "Submit complaint", "Request inspection", etc. Keeps the look consistent
+ * across the row so users scan it as a single grid of options.
+ */
+function QuickActionCard({
+  icon,
+  label,
+  desc,
+  onClick,
+  className
+}: {
+  icon: React.ReactNode;
+  label: string;
+  desc: string;
+  onClick: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'group flex items-start gap-2.5 rounded-xl border border-border bg-surface px-3 py-2.5 text-left transition hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+        className
+      )}
+    >
+      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-2 group-hover:bg-primary/10">
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-medium text-foreground group-hover:text-primary">
+          {label}
+        </span>
+        <span className="block text-xs text-muted-foreground">{desc}</span>
+      </span>
+    </button>
+  );
+}
+
 export default function ChatWidget() {
   const t = useTranslations('chat');
   const locale = useLocale() as 'en' | 'es';
@@ -164,6 +217,7 @@ export default function ChatWidget() {
   const [failedMessage, setFailedMessage] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [quickActionType, setQuickActionType] = useState<RequestType | null>(null);
   // Bumped every minute so relative timestamps re-render without per-message timers.
   const [, setTimeTick] = useState(0);
 
@@ -460,6 +514,17 @@ export default function ChatWidget() {
     if (ok) setCopiedId(m.id);
   }, []);
 
+  // Quick-action entry points from the welcome screen.
+  function startQuickAction(type: RequestType) {
+    if (!sessionRef.current) createNew(locale);
+    setQuickActionType(type);
+  }
+
+  function startPermitQuestion() {
+    setInput(t('quickActions.permitsPrompt'));
+    setTimeout(() => textareaRef.current?.focus(), 30);
+  }
+
   function onKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -639,6 +704,53 @@ export default function ChatWidget() {
               </div>
             </motion.div>
 
+            {/* Quick-action launchers — let residents jump straight to a
+                pothole report, complaint, inspection, ticket, or permit Q&A
+                without typing first. Each card pre-fills the right intent. */}
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: 0.22 }}
+              aria-label={t('quickActions.title')}
+            >
+              <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {t('quickActions.subtitle')}
+              </p>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <QuickActionCard
+                  icon={<Construction className="h-4 w-4 text-accent" aria-hidden="true" />}
+                  label={t('quickActions.pothole')}
+                  desc={t('quickActions.potholeDesc')}
+                  onClick={() => startQuickAction('pothole')}
+                />
+                <QuickActionCard
+                  icon={<Megaphone className="h-4 w-4 text-destructive" aria-hidden="true" />}
+                  label={t('quickActions.complaint')}
+                  desc={t('quickActions.complaintDesc')}
+                  onClick={() => startQuickAction('complaint')}
+                />
+                <QuickActionCard
+                  icon={<ClipboardCheck className="h-4 w-4 text-secondary" aria-hidden="true" />}
+                  label={t('quickActions.inspection')}
+                  desc={t('quickActions.inspectionDesc')}
+                  onClick={() => startQuickAction('inspection')}
+                />
+                <QuickActionCard
+                  icon={<Wrench className="h-4 w-4 text-primary" aria-hidden="true" />}
+                  label={t('quickActions.ticket')}
+                  desc={t('quickActions.ticketDesc')}
+                  onClick={() => startQuickAction('general')}
+                />
+                <QuickActionCard
+                  icon={<FileText className="h-4 w-4 text-gold" aria-hidden="true" />}
+                  label={t('quickActions.permits')}
+                  desc={t('quickActions.permitsDesc')}
+                  onClick={startPermitQuestion}
+                  className="sm:col-span-2"
+                />
+              </div>
+            </motion.div>
+
             {/* Idle entertainment — slides in after ~18s of no input */}
             <AnimatePresence>
               {isIdle && <IdleEntertainment lang={locale} />}
@@ -731,12 +843,19 @@ export default function ChatWidget() {
           />
         )}
 
-        {requestForMsgId && sessionRef.current && (
+        {(requestForMsgId || quickActionType) && sessionRef.current && (
           <ServiceRequestForm
             sessionId={sessionRef.current}
             lang={locale}
-            onSubmitted={onRequestSubmitted}
-            onDismiss={() => setRequestForMsgId(null)}
+            initialType={quickActionType ?? undefined}
+            onSubmitted={(msg) => {
+              onRequestSubmitted(msg);
+              setQuickActionType(null);
+            }}
+            onDismiss={() => {
+              setRequestForMsgId(null);
+              setQuickActionType(null);
+            }}
           />
         )}
 
