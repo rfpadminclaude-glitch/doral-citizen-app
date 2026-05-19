@@ -1,7 +1,7 @@
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowUp, History, MessageSquarePlus, Sparkles, User } from 'lucide-react';
+import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
+import { ArrowUp, Check, Copy, History, MessageSquarePlus, RefreshCw, User } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -42,6 +42,7 @@ type Msg = {
   sources?: Source[];
   citations?: number[];
   suggestedActions?: SuggestedAction[];
+  createdAt?: number;
 };
 
 type ApiResponse = {
@@ -60,17 +61,56 @@ type ApiResponse = {
   message?: string;
 };
 
-const sentimentClass: Record<Sentiment, string> = {
-  positive: 'bg-sentiment-positive/15 text-sentiment-positive',
-  neutral: 'bg-sentiment-neutral/15 text-sentiment-neutral',
-  negative: 'bg-sentiment-negative/15 text-sentiment-negative',
-  frustrated: 'bg-sentiment-frustrated/15 text-sentiment-frustrated',
-  urgent: 'bg-sentiment-urgent/15 text-sentiment-urgent'
-};
-
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function isUuid(s: string): boolean {
   return UUID_RE.test(s);
+}
+
+/**
+ * Locale-aware relative time ("just now" / "2 min. ago" / "hace 2 min").
+ * Returns null when no timestamp is present so the UI can skip rendering
+ * (e.g. messages restored from the server which don't carry created_at).
+ */
+function formatRelative(
+  ts: number | undefined,
+  locale: 'en' | 'es',
+  justNowLabel: string
+): string | null {
+  if (!ts) return null;
+  const diffSec = Math.round((Date.now() - ts) / 1000);
+  if (diffSec < 45) return justNowLabel;
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto', style: 'short' });
+  const diffMin = Math.round(diffSec / 60);
+  if (Math.abs(diffMin) < 60) return rtf.format(-diffMin, 'minute');
+  const diffHour = Math.round(diffMin / 60);
+  if (Math.abs(diffHour) < 24) return rtf.format(-diffHour, 'hour');
+  const diffDay = Math.round(diffHour / 24);
+  return rtf.format(-diffDay, 'day');
+}
+
+async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    /* fall through to legacy path */
+  }
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.top = '-1000px';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -121,6 +161,11 @@ export default function ChatWidget() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [bookingForMsgId, setBookingForMsgId] = useState<string | null>(null);
   const [requestForMsgId, setRequestForMsgId] = useState<string | null>(null);
+  const [failedMessage, setFailedMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  // Bumped every minute so relative timestamps re-render without per-message timers.
+  const [, setTimeTick] = useState(0);
 
   // Resolve the resident's profile (if any) from the session list.
   const activeSession = sessions.find((s) => s.id === activeId);
@@ -140,6 +185,27 @@ export default function ChatWidget() {
   useEffect(() => {
     sessionRef.current = activeId;
   }, [activeId]);
+
+  // Tick every minute so the relative-time labels on messages refresh
+  // without each <article> running its own interval.
+  useEffect(() => {
+    const id = window.setInterval(() => setTimeTick((n) => n + 1), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  // Auto-dismiss the inline toast after a few seconds.
+  useEffect(() => {
+    if (!toast) return;
+    const id = window.setTimeout(() => setToast(null), 3500);
+    return () => window.clearTimeout(id);
+  }, [toast]);
+
+  // Clear the per-message "Copied!" indicator after a beat.
+  useEffect(() => {
+    if (!copiedId) return;
+    const id = window.setTimeout(() => setCopiedId(null), 1800);
+    return () => window.clearTimeout(id);
+  }, [copiedId]);
 
   // Auto-scroll on new messages or when inline forms (booking / service
   // request) mount so the freshly rendered form / its popovers aren't
@@ -281,31 +347,10 @@ export default function ChatWidget() {
     [activeId, remove]
   );
 
-  async function send() {
-    const text = input.trim();
-    if (!text || pending) return;
-    setError(null);
+  // Server round-trip + message-list mutation. Extracted so retryFailed()
+  // can re-fire the network call without re-appending the user message.
+  async function postChat(text: string, sid: string) {
     setPending(true);
-
-    // Ensure we have a session id before posting.
-    let sid = sessionRef.current;
-    if (!sid) {
-      sid = createNew(locale);
-    }
-
-    const userMsg: Msg = { id: `u_${Date.now()}`, role: 'user', content: text };
-    setMessages((m) => [...m, userMsg]);
-    setInput('');
-
-    // Update title from first user message (if not set yet).
-    const existing = sessions.find((s) => s.id === sid);
-    const isFirstMessage = !existing || existing.messageCount === 0;
-    upsert(sid, {
-      title: isFirstMessage ? titleFromFirstMessage(text) : existing?.title,
-      lang: locale,
-      messageCount: (existing?.messageCount ?? 0) + 1
-    });
-
     try {
       const resp = await fetch('/api/chat', {
         method: 'POST',
@@ -314,16 +359,18 @@ export default function ChatWidget() {
       });
       const data: ApiResponse = await resp.json();
       if (!resp.ok || data.error) {
-        setError(null); // surface a soft toast via message instead of red banner
         setMessages((m) => [
           ...m,
           {
             id: `a_${Date.now()}`,
             role: 'assistant',
             content: data.message ?? `${t('errorTitle')} ${t('errorBody')}`,
-            provider: 'none'
+            provider: 'none',
+            createdAt: Date.now()
           }
         ]);
+        const ex = sessions.find((s) => s.id === sid);
+        upsert(sid, { messageCount: (ex?.messageCount ?? 0) + 1 });
       } else {
         const aMsg: Msg = {
           id: data.message_id ?? `a_${Date.now()}`,
@@ -333,10 +380,12 @@ export default function ChatWidget() {
           provider: data.provider,
           sources: data.sources,
           citations: data.citations,
-          suggestedActions: data.suggested_actions
+          suggestedActions: data.suggested_actions,
+          createdAt: Date.now()
         };
         setMessages((m) => [...m, aMsg]);
-        upsert(sid, { messageCount: (existing?.messageCount ?? 0) + 2 });
+        const ex = sessions.find((s) => s.id === sid);
+        upsert(sid, { messageCount: (ex?.messageCount ?? 0) + 1 });
         if (data.suggested_actions?.includes('book_appointment')) {
           setBookingForMsgId(aMsg.id);
         }
@@ -347,12 +396,69 @@ export default function ChatWidget() {
           liveRegionRef.current.textContent = `${t('newMessage')}: ${data.answer}`;
         }
       }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+    } catch {
+      // Surface a retry affordance instead of a generic error banner.
+      setFailedMessage(text);
     } finally {
       setPending(false);
     }
   }
+
+  async function send() {
+    const text = input.trim();
+    if (!text || pending) return;
+    setFailedMessage(null);
+
+    let sid = sessionRef.current;
+    if (!sid) sid = createNew(locale);
+
+    const userMsg: Msg = {
+      id: `u_${Date.now()}`,
+      role: 'user',
+      content: text,
+      createdAt: Date.now()
+    };
+    setMessages((m) => [...m, userMsg]);
+    setInput('');
+
+    const existing = sessions.find((s) => s.id === sid);
+    const isFirstMessage = (existing?.messageCount ?? 0) === 0;
+    upsert(sid, {
+      title: isFirstMessage ? titleFromFirstMessage(text) : existing?.title,
+      lang: locale,
+      messageCount: (existing?.messageCount ?? 0) + 1
+    });
+
+    // Show the "we're saving this chat" toast once per browser session, after
+    // the very first user message — reassures residents that history persists.
+    if (isFirstMessage && typeof window !== 'undefined') {
+      try {
+        if (!sessionStorage.getItem('doral.savedToastShown')) {
+          sessionStorage.setItem('doral.savedToastShown', '1');
+          setToast(t('savedToast'));
+        }
+      } catch {
+        /* sessionStorage blocked (private mode) — skip */
+      }
+    }
+
+    await postChat(text, sid);
+  }
+
+  const retryFailed = useCallback(async () => {
+    if (!failedMessage) return;
+    const text = failedMessage;
+    setFailedMessage(null);
+    const sid = sessionRef.current;
+    if (!sid) return;
+    await postChat(text, sid);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [failedMessage]);
+
+  const onCopyMessage = useCallback(async (m: Msg) => {
+    const ok = await copyToClipboard(m.content);
+    if (ok) setCopiedId(m.id);
+  }, []);
 
   function onKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -367,6 +473,7 @@ export default function ChatWidget() {
   );
 
   return (
+    <MotionConfig reducedMotion="user">
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
@@ -386,10 +493,10 @@ export default function ChatWidget() {
                 <span className="text-sm font-semibold text-foreground">{t('title')}</span>
                 <span
                   className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-medium text-success"
-                  aria-label="Assistant online"
+                  aria-label={t('online')}
                 >
                   <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden="true" />
-                  Online
+                  {t('online')}
                 </span>
                 {residentName && (
                   <button
@@ -410,30 +517,33 @@ export default function ChatWidget() {
             <button
               type="button"
               onClick={newChat}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition hover:bg-surface-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              aria-label="New chat"
-              title="New chat"
+              className="inline-flex h-9 min-w-9 items-center justify-center gap-1.5 rounded-full px-2 text-muted-foreground transition hover:bg-surface-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              aria-label={t('newChat')}
+              title={t('newChat')}
             >
               <MessageSquarePlus className="h-4 w-4" />
+              <span className="hidden text-xs font-medium md:inline">{t('newChat')}</span>
             </button>
             <button
               type="button"
               onClick={() => setProfileOpen(true)}
               disabled={!sessionRef.current}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition hover:bg-surface-2 hover:text-foreground disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              aria-label="Profile"
-              title="Profile"
+              className="inline-flex h-9 min-w-9 items-center justify-center gap-1.5 rounded-full px-2 text-muted-foreground transition hover:bg-surface-2 hover:text-foreground disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              aria-label={t('profile')}
+              title={t('profile')}
             >
               <User className="h-4 w-4" />
+              <span className="hidden text-xs font-medium md:inline">{t('profile')}</span>
             </button>
             <button
               type="button"
               onClick={() => setHistoryOpen(true)}
-              className="relative inline-flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition hover:bg-surface-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              aria-label={`Chat history (${sessions.length})`}
-              title="History"
+              className="relative inline-flex h-9 min-w-9 items-center justify-center gap-1.5 rounded-full px-2 text-muted-foreground transition hover:bg-surface-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              aria-label={`${t('history')} (${sessions.length})`}
+              title={t('history')}
             >
               <History className="h-4 w-4" />
+              <span className="hidden text-xs font-medium md:inline">{t('history')}</span>
               {sessions.length > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold text-primary-foreground">
                   {sessions.length > 9 ? '9+' : sessions.length}
@@ -445,6 +555,22 @@ export default function ChatWidget() {
       </div>
 
       <span className="sr-only" aria-live="polite" ref={liveRegionRef} />
+
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            key="chat-toast"
+            role="status"
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="mx-4 mt-2 shrink-0 self-start rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-[11px] font-medium text-primary"
+          >
+            {toast}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Conversation log */}
       <div
@@ -558,24 +684,34 @@ export default function ChatWidget() {
                   ))}
                 </div>
               )}
-              {m.role === 'assistant' && (m.provider || m.sentiment) && (
-                <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider">
-                  {m.provider === 'rag-fallback' ? (
-                    <span className="rounded-full bg-gold/15 px-1.5 py-0.5 text-gold">
-                      best match · LLM offline
-                    </span>
-                  ) : m.provider && m.provider !== 'none' ? (
-                    <span className="rounded-full bg-surface-2 px-1.5 py-0.5 text-muted-foreground">
-                      via {m.provider}
-                    </span>
-                  ) : null}
-                  {m.sentiment && (
-                    <span className={cn('rounded-full px-1.5 py-0.5', sentimentClass[m.sentiment])}>
-                      {m.sentiment}
-                    </span>
-                  )}
-                </div>
-              )}
+              <div
+                className={cn(
+                  'mt-1.5 flex items-center justify-between gap-2 text-[10px]',
+                  m.role === 'user' ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                )}
+              >
+                <span>{formatRelative(m.createdAt, locale, t('justNow'))}</span>
+                {m.role === 'assistant' && (
+                  <button
+                    type="button"
+                    onClick={() => void onCopyMessage(m)}
+                    aria-label={t('copyMessage')}
+                    className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-muted-foreground transition hover:bg-surface-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  >
+                    {copiedId === m.id ? (
+                      <>
+                        <Check className="h-3 w-3" aria-hidden="true" />
+                        <span>{t('copied')}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3 w-3" aria-hidden="true" />
+                        <span className="sr-only">{t('copyMessage')}</span>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
               {m.role === 'assistant' &&
                 m.provider &&
                 m.provider !== 'none' &&
@@ -645,12 +781,26 @@ export default function ChatWidget() {
         )}
       </div>
 
-      {error && (
+      {(error || failedMessage) && (
         <div
           role="alert"
           className="border-t border-destructive/30 bg-destructive/10 px-4 py-2 text-xs text-destructive"
         >
-          {error}
+          {failedMessage ? (
+            <div className="flex items-center justify-between gap-3">
+              <span>{t('retryHint')}</span>
+              <button
+                type="button"
+                onClick={() => void retryFailed()}
+                className="inline-flex items-center gap-1 rounded-md bg-destructive px-2 py-0.5 text-[10px] font-semibold text-destructive-foreground transition hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive"
+              >
+                <RefreshCw className="h-3 w-3" aria-hidden="true" />
+                {t('retry')}
+              </button>
+            </div>
+          ) : (
+            error
+          )}
         </div>
       )}
 
@@ -687,10 +837,16 @@ export default function ChatWidget() {
           </button>
         </div>
         <p className="mt-1.5 text-[10px] text-muted-foreground">
-          Press <kbd className="rounded border border-border bg-surface-2 px-1 text-[10px]">Enter</kbd> to send ·{' '}
-          <kbd className="rounded border border-border bg-surface-2 px-1 text-[10px]">Shift</kbd>+
-          <kbd className="rounded border border-border bg-surface-2 px-1 text-[10px]">Enter</kbd> for newline · For
-          emergencies dial <span className="font-semibold text-foreground">911</span>
+          {t.rich('kbdHint', {
+            kbd: (chunks) => (
+              <kbd className="rounded border border-border bg-surface-2 px-1 text-[10px]">
+                {chunks}
+              </kbd>
+            ),
+            strong: (chunks) => (
+              <span className="font-semibold text-foreground">{chunks}</span>
+            )
+          })}
         </p>
       </form>
 
@@ -734,5 +890,6 @@ export default function ChatWidget() {
         />
       )}
     </motion.div>
+    </MotionConfig>
   );
 }

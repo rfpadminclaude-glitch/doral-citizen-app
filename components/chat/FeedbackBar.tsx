@@ -101,7 +101,7 @@ export function FeedbackBar({ messageId, conversationId }: Props) {
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="Tell us what went wrong (optional)"
+              placeholder={t('placeholder')}
               rows={2}
               maxLength={2000}
               className="block w-full resize-none rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
@@ -113,14 +113,14 @@ export function FeedbackBar({ messageId, conversationId }: Props) {
                 className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground transition hover:translate-y-[-0.5px] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background"
               >
                 {pending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
-                Send
+                {t('send')}
               </button>
               <button
                 type="button"
                 onClick={() => setState('idle')}
                 className="rounded-lg px-2.5 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:underline"
               >
-                Cancel
+                {t('cancel')}
               </button>
             </div>
           </motion.form>

@@ -2,9 +2,10 @@
 
 import { AnimatePresence, motion } from 'framer-motion';
 import { MessageSquarePlus, Search, Trash2, X, History } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { relativeTime, type ChatSessionMeta } from '@/lib/chat/sessions';
+import { useFocusTrap } from '@/lib/chat/useFocusTrap';
 
 type Props = {
   open: boolean;
@@ -26,6 +27,8 @@ export function HistoryDrawer({
   onDelete
 }: Props) {
   const [query, setQuery] = useState('');
+  const drawerRef = useRef<HTMLElement>(null);
+  useFocusTrap(open, drawerRef, onClose);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -51,11 +54,13 @@ export function HistoryDrawer({
 
           {/* Drawer panel */}
           <motion.aside
+            ref={drawerRef}
+            tabIndex={-1}
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', stiffness: 320, damping: 34 }}
-            className="absolute inset-y-0 right-0 z-30 flex w-full max-w-sm flex-col border-l border-border bg-surface shadow-glass"
+            className="absolute inset-y-0 right-0 z-30 flex w-full max-w-sm flex-col border-l border-border bg-surface shadow-glass focus-visible:outline-none"
             aria-label="Chat history"
             role="dialog"
             aria-modal="true"

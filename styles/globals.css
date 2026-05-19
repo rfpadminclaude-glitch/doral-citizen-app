@@ -139,6 +139,19 @@
     @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
   }
 
+  /* WCAG 2.3.3 — Animation from interactions. Honor OS-level reduced-motion
+     preference by collapsing animations and transitions to a single frame.
+     Framer-motion-driven animations are additionally gated via MotionConfig
+     in the chat widget root. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
   /* Decorative ambient gradient used on the resident landing. */
   .doral-radial {
     background-image:

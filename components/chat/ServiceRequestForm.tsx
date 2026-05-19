@@ -2,7 +2,9 @@
 
 import { AnimatePresence, motion } from 'framer-motion';
 import {
+  Check,
   CheckCircle2,
+  Copy,
   FileText,
   FileWarning,
   Loader2,
@@ -59,7 +61,11 @@ const STRINGS = {
     serverError: 'We couldn\'t submit that. Please try again.',
     successTitle: 'Request submitted',
     successHint: 'A staff member will follow up via your phone or email. Track this case with the code below.',
-    close: 'Close'
+    close: 'Close',
+    caseLabel: 'Case number',
+    saveCode: 'Save this code',
+    copyCode: 'Copy code',
+    copied: 'Copied!'
   },
   es: {
     title: 'Abrir una solicitud',
@@ -87,7 +93,11 @@ const STRINGS = {
     serverError: 'No pudimos enviar la solicitud. Inténtalo de nuevo.',
     successTitle: 'Solicitud enviada',
     successHint: 'Un miembro del personal te contactará por teléfono o correo. Rastrea este caso con el código.',
-    close: 'Cerrar'
+    close: 'Cerrar',
+    caseLabel: 'Número de caso',
+    saveCode: 'Guarda este código',
+    copyCode: 'Copiar código',
+    copied: '¡Copiado!'
   }
 } as const;
 
@@ -117,6 +127,7 @@ export function ServiceRequestForm({ sessionId, lang, onSubmitted, onDismiss }: 
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [success, setSuccess] = useState<SubmittedMessage | null>(null);
+  const [codeCopied, setCodeCopied] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
   // Scroll into view on mount so the whole form is reachable.
@@ -124,12 +135,37 @@ export function ServiceRequestForm({ sessionId, lang, onSubmitted, onDismiss }: 
     rootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
 
-  // Surface the success state for a beat, then hand off to chat.
+  // Surface the success state for a beat, then hand off to chat. The hand-off
+  // is paused if the resident actively engages with the code (copies it) so
+  // they have time to save it before the card disappears.
   useEffect(() => {
     if (!success) return;
-    const t = setTimeout(() => onSubmitted(success), 1400);
-    return () => clearTimeout(t);
-  }, [success, onSubmitted]);
+    const ms = codeCopied ? 3200 : 1800;
+    const id = setTimeout(() => onSubmitted(success), ms);
+    return () => clearTimeout(id);
+  }, [success, onSubmitted, codeCopied]);
+
+  async function copyCaseCode() {
+    if (!success) return;
+    try {
+      if (navigator?.clipboard) {
+        await navigator.clipboard.writeText(success.case_code);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = success.case_code;
+        ta.style.position = 'fixed';
+        ta.style.top = '-1000px';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      setCodeCopied(true);
+      setTimeout(() => setCodeCopied(false), 1800);
+    } catch {
+      /* ignore — clipboard blocked */
+    }
+  }
 
   const typeOptions: SelectOption<RequestType>[] = (
     ['permit', 'code_violation', 'park_issue', 'general'] as const
@@ -359,12 +395,35 @@ export function ServiceRequestForm({ sessionId, lang, onSubmitted, onDismiss }: 
             >
               <CheckCircle2 className="h-7 w-7" />
             </motion.span>
-            <div>
+            <div className="w-full">
               <h3 className="text-sm font-semibold text-foreground">{s.successTitle}</h3>
               <p className="mt-1 text-xs text-muted-foreground">{s.successHint}</p>
-              <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                Case <span className="font-mono font-semibold">{success.case_code}</span>
-              </p>
+              <div className="mx-auto mt-3 flex max-w-[320px] flex-col items-center gap-2 rounded-2xl border-2 border-primary/40 bg-primary/5 px-4 py-3 shadow-soft">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">
+                  {s.caseLabel}
+                </span>
+                <span className="font-mono text-lg font-bold tracking-wider text-primary">
+                  {success.case_code}
+                </span>
+                <button
+                  type="button"
+                  onClick={copyCaseCode}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground transition hover:translate-y-[-1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  aria-label={s.copyCode}
+                >
+                  {codeCopied ? (
+                    <>
+                      <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                      {s.copied}
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+                      {s.saveCode}
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </motion.div>
         )}

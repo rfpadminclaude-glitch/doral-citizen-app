@@ -2,8 +2,10 @@
 
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, Check, Loader2, Mail, Phone, User, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { useEffect, useRef, useState } from 'react';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
+import { useFocusTrap } from '@/lib/chat/useFocusTrap';
 import { cn } from '@/lib/utils';
 
 type Profile = {
@@ -26,6 +28,7 @@ type Props = {
 };
 
 export function ProfileDrawer({ open, onClose, sessionId, initial, onSaved }: Props) {
+  const t = useTranslations('chat.profileDrawer');
   const [profile, setProfile] = useState<Profile>({
     name: initial?.name ?? '',
     email: initial?.email ?? '',
@@ -37,6 +40,8 @@ export function ProfileDrawer({ open, onClose, sessionId, initial, onSaved }: Pr
   const [pending, setPending] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const drawerRef = useRef<HTMLElement>(null);
+  useFocusTrap(open, drawerRef, onClose);
 
   // When the drawer opens, fetch the latest from the server so the form
   // always reflects ground truth.
@@ -113,10 +118,12 @@ export function ProfileDrawer({ open, onClose, sessionId, initial, onSaved }: Pr
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t('close')}
             className="absolute inset-0 z-20 bg-foreground/30 backdrop-blur-sm"
           />
           <motion.aside
+            ref={drawerRef}
+            tabIndex={-1}
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
@@ -124,7 +131,7 @@ export function ProfileDrawer({ open, onClose, sessionId, initial, onSaved }: Pr
             role="dialog"
             aria-modal="true"
             aria-labelledby="profile-title"
-            className="absolute inset-y-0 right-0 z-30 flex w-full max-w-sm flex-col border-l border-border bg-surface shadow-glass"
+            className="absolute inset-y-0 right-0 z-30 flex w-full max-w-sm flex-col border-l border-border bg-surface shadow-glass focus-visible:outline-none"
           >
             <div className="doral-gradient-bar-animated h-1.5 w-full" aria-hidden="true" />
             <header className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
@@ -133,13 +140,13 @@ export function ProfileDrawer({ open, onClose, sessionId, initial, onSaved }: Pr
                   <User className="h-4 w-4" />
                 </span>
                 <h2 id="profile-title" className="text-sm font-semibold text-foreground">
-                  Your profile
+                  {t('title')}
                 </h2>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Close profile"
+                aria-label={t('close')}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition hover:bg-surface-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
                 <X className="h-4 w-4" />
@@ -149,8 +156,8 @@ export function ProfileDrawer({ open, onClose, sessionId, initial, onSaved }: Pr
             <form onSubmit={save} className="flex min-h-0 flex-1 flex-col">
               <div className="scroll-thin min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4">
                 {/* Avatar */}
-                <Field label="Avatar">
-                  <div role="radiogroup" aria-label="Avatar emoji" className="flex flex-wrap gap-1.5">
+                <Field label={t('avatar')}>
+                  <div role="radiogroup" aria-label={t('avatarLabel')} className="flex flex-wrap gap-1.5">
                     {AVATAR_CHOICES.map((e) => {
                       const active = profile.avatar === e;
                       return (
@@ -175,14 +182,14 @@ export function ProfileDrawer({ open, onClose, sessionId, initial, onSaved }: Pr
                 </Field>
 
                 {/* Name */}
-                <Field label="Name" htmlFor="profile-name">
+                <Field label={t('name')} htmlFor="profile-name">
                   <div className="field-ring flex items-center gap-2 px-3 py-2">
                     <User className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                     <input
                       id="profile-name"
                       value={profile.name}
                       onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
-                      placeholder="Your first name"
+                      placeholder={t('namePlaceholder')}
                       maxLength={120}
                       className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
                       autoComplete="given-name"
@@ -191,7 +198,7 @@ export function ProfileDrawer({ open, onClose, sessionId, initial, onSaved }: Pr
                 </Field>
 
                 {/* Email */}
-                <Field label="Email" htmlFor="profile-email">
+                <Field label={t('email')} htmlFor="profile-email">
                   <div className="field-ring flex items-center gap-2 px-3 py-2">
                     <Mail className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                     <input
@@ -199,7 +206,7 @@ export function ProfileDrawer({ open, onClose, sessionId, initial, onSaved }: Pr
                       type="email"
                       value={profile.email}
                       onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))}
-                      placeholder="you@example.com"
+                      placeholder={t('emailPlaceholder')}
                       maxLength={160}
                       className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
                       autoComplete="email"
@@ -208,7 +215,7 @@ export function ProfileDrawer({ open, onClose, sessionId, initial, onSaved }: Pr
                 </Field>
 
                 {/* Phone */}
-                <Field label="Phone" htmlFor="profile-phone">
+                <Field label={t('phone')} htmlFor="profile-phone">
                   <div className="field-ring flex items-center gap-2 px-3 py-2">
                     <Phone className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                     <input
@@ -216,7 +223,7 @@ export function ProfileDrawer({ open, onClose, sessionId, initial, onSaved }: Pr
                       type="tel"
                       value={profile.phone}
                       onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))}
-                      placeholder="+1 305 555 0123"
+                      placeholder={t('phonePlaceholder')}
                       maxLength={40}
                       className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
                       autoComplete="tel"
@@ -225,9 +232,9 @@ export function ProfileDrawer({ open, onClose, sessionId, initial, onSaved }: Pr
                 </Field>
 
                 {/* Language */}
-                <Field label="Language">
+                <Field label={t('language')}>
                   <SegmentedControl<'en' | 'es'>
-                    ariaLabel="Language"
+                    ariaLabel={t('language')}
                     value={profile.lang}
                     onChange={(v) => setProfile((p) => ({ ...p, lang: v }))}
                     options={[
@@ -251,10 +258,10 @@ export function ProfileDrawer({ open, onClose, sessionId, initial, onSaved }: Pr
                   <span className="flex-1">
                     <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
                       <Bell className="h-3.5 w-3.5 text-primary" />
-                      Receive announcements
+                      {t('announcements')}
                     </span>
                     <span className="mt-0.5 block text-[11px] text-muted-foreground">
-                      Get notified about city alerts and event updates.
+                      {t('announcementsHint')}
                     </span>
                   </span>
                 </label>
@@ -272,7 +279,7 @@ export function ProfileDrawer({ open, onClose, sessionId, initial, onSaved }: Pr
                   onClick={onClose}
                   className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
-                  Cancel
+                  {t('cancel')}
                 </button>
                 <button
                   type="submit"
@@ -284,7 +291,7 @@ export function ProfileDrawer({ open, onClose, sessionId, initial, onSaved }: Pr
                   ) : saved ? (
                     <Check className="h-3.5 w-3.5" />
                   ) : null}
-                  {pending ? 'Saving…' : saved ? 'Saved' : 'Save'}
+                  {pending ? t('saving') : saved ? t('saved') : t('save')}
                 </button>
               </footer>
             </form>
