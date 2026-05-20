@@ -369,21 +369,16 @@ function NavRow({
       onClick={onClick}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'group relative flex items-center gap-3 rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-        collapsed ? 'h-10 justify-center px-0' : 'px-3 py-2',
+        // Unified pill shape — same height + padding in both collapsed and
+        // expanded states so the active background fills a consistent box
+        // and the icon never shifts position when the sidebar resizes.
+        'group relative flex h-10 items-center gap-3 rounded-lg px-3 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+        collapsed && 'justify-center',
         active
-          ? 'bg-primary/12 text-primary'
+          ? 'bg-primary/12 font-semibold text-primary'
           : 'text-muted-foreground hover:bg-surface hover:text-foreground'
       )}
     >
-      {active && !collapsed && (
-        <motion.span
-          layoutId="admin-nav-active"
-          className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r bg-primary"
-          aria-hidden="true"
-          transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-        />
-      )}
       <span className="shrink-0">{icon}</span>
       <AnimatePresence initial={false}>
         {!collapsed && (
@@ -393,7 +388,7 @@ function NavRow({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -4 }}
             transition={{ duration: 0.12 }}
-            className="truncate text-sm font-medium"
+            className="truncate text-sm"
           >
             {label}
           </motion.span>
