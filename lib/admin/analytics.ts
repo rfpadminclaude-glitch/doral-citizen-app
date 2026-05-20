@@ -228,9 +228,13 @@ export async function dashboardKpis(): Promise<SparklineKpi[]> {
 export type ActivityEvent = {
   id: string;
   type: 'conversation' | 'service_request' | 'appointment' | 'feedback' | 'announcement' | 'document';
+  /** Refinement of `type` — e.g. for service_request, the request_type ('pothole', 'permit', etc.) */
+  subtype?: string;
   title: string;
   subtitle?: string;
   at: string;
+  /** Optional href to deep-link from the activity row */
+  href?: string;
 };
 
 export async function dashboardActivityFeed(limit = 8): Promise<ActivityEvent[]> {
@@ -257,15 +261,18 @@ export async function dashboardActivityFeed(limit = 8): Promise<ActivityEvent[]>
     events.push({
       id: `s_${s.id}`,
       type: 'service_request',
+      subtype: s.request_type as string,
       title: (s.title as string) ?? 'Service request',
       subtitle: `${s.resident_name ?? 'Anonymous'} · ${s.request_type}`,
-      at: s.created_at as string
+      at: s.created_at as string,
+      href: `/admin/requests/${s.id}`
     });
   }
   for (const a of appts ?? []) {
     events.push({
       id: `a_${a.id}`,
       type: 'appointment',
+      subtype: a.appointment_type as string,
       title: `${(a.appointment_type as string).replace('_', ' ')} appointment`,
       subtitle: `${a.resident_name ?? 'Anonymous'} · ${new Date(a.slot_start as string).toLocaleString()}`,
       at: a.created_at as string
@@ -291,6 +298,69 @@ export async function dashboardActivityFeed(limit = 8): Promise<ActivityEvent[]>
   }
 
   return events.sort((x, y) => (x.at < y.at ? 1 : -1)).slice(0, limit);
+}
+
+// ============================================================================
+// Needs-attention helpers (dashboard)
+// ============================================================================
+
+export type OpenRequest = {
+  id: string;
+  title: string;
+  request_type: string;
+  status: 'new' | 'in_progress';
+  priority: 'low' | 'normal' | 'high' | 'urgent';
+  resident_name: string | null;
+  created_at: string;
+};
+
+/**
+ * Open service requests at high or urgent priority — the queue staff should
+ * tackle first. Sorted urgent-then-high, oldest-first within each bucket so
+ * the rows that have been waiting longest float up.
+ */
+export async function openHighPriorityRequests(limit = 5): Promise<OpenRequest[]> {
+  const sb = createAdminClient();
+  const { data } = await sb
+    .from('service_requests')
+    .select('id, title, request_type, status, priority, resident_name, created_at')
+    .in('status', ['new', 'in_progress'])
+    .in('priority', ['high', 'urgent'])
+    .order('created_at', { ascending: true })
+    .limit(limit * 2); // fetch more than needed so the JS sort has headroom
+
+  const order: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
+  return (data ?? [])
+    .sort((a, b) => (order[a.priority as string] ?? 9) - (order[b.priority as string] ?? 9))
+    .slice(0, limit) as OpenRequest[];
+}
+
+export type TodayAppointment = {
+  id: string;
+  appointment_type: string;
+  slot_start: string;
+  resident_name: string | null;
+  confirmation_code: string;
+};
+
+/**
+ * Booked appointments whose slot_start falls within today's local-day window.
+ * Uses the server's local date to define the window so it matches what the
+ * staff sees on their wall clock. Returned sorted earliest-first.
+ */
+export async function todaysAppointments(): Promise<TodayAppointment[]> {
+  const sb = createAdminClient();
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const { data } = await sb
+    .from('appointments')
+    .select('id, appointment_type, slot_start, resident_name, confirmation_code, status')
+    .gte('slot_start', start.toISOString())
+    .lt('slot_start', end.toISOString())
+    .eq('status', 'booked')
+    .order('slot_start', { ascending: true });
+  return (data ?? []) as TodayAppointment[];
 }
 
 // ============================================================================

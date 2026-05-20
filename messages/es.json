@@ -93,6 +93,26 @@
       "social": "Redes sociales",
       "logout": "Cerrar sesión"
     },
+    "dashboard": {
+      "greetingMorning": "Buenos días",
+      "greetingAfternoon": "Buenas tardes",
+      "greetingEvening": "Buenas noches",
+      "greetingNight": "Buenas noches",
+      "heroDefault": "Vista en vivo del asistente para residentes de Doral.",
+      "todaySummary": "{convs} conversaciones y {complaints} quejas nuevas desde la medianoche.",
+      "qaAnnouncement": "Redactar anuncio",
+      "qaKnowledge": "Base de conocimiento",
+      "qaConversations": "Conversaciones en vivo",
+      "qaAnalytics": "Análisis completo",
+      "needsAttentionTitle": "Requiere atención",
+      "needsAttentionKicker": "Solicitudes urgentes + alta prioridad abiertas",
+      "needsAttentionEmpty": "Todo al día — no hay solicitudes urgentes abiertas.",
+      "todaysAppointmentsTitle": "Citas de hoy",
+      "todaysAppointmentsKicker": "Reservadas, próximas primero",
+      "todaysAppointmentsEmpty": "Sin citas reservadas para hoy.",
+      "activityTitle": "Actividad reciente",
+      "activityKicker": "En todo el asistente"
+    },
     "requests": {
       "title": "Solicitudes de servicio",
       "subtitle": "Todos los problemas que los residentes han reportado a través del asistente.",

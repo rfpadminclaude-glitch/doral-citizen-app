@@ -93,6 +93,26 @@
       "social": "Social",
       "logout": "Sign out"
     },
+    "dashboard": {
+      "greetingMorning": "Good morning",
+      "greetingAfternoon": "Good afternoon",
+      "greetingEvening": "Good evening",
+      "greetingNight": "Good night",
+      "heroDefault": "Live snapshot of the Doral citizen assistant.",
+      "todaySummary": "{convs} conversations and {complaints} new complaints since midnight.",
+      "qaAnnouncement": "Compose announcement",
+      "qaKnowledge": "Knowledge base",
+      "qaConversations": "Live conversations",
+      "qaAnalytics": "Full analytics",
+      "needsAttentionTitle": "Needs attention",
+      "needsAttentionKicker": "Open urgent + high priority",
+      "needsAttentionEmpty": "All caught up — no urgent requests open.",
+      "todaysAppointmentsTitle": "Today's appointments",
+      "todaysAppointmentsKicker": "Booked slots, soonest first",
+      "todaysAppointmentsEmpty": "No appointments booked for today.",
+      "activityTitle": "Latest activity",
+      "activityKicker": "Across the assistant"
+    },
     "requests": {
       "title": "Service requests",
       "subtitle": "Every issue residents have logged through the assistant.",
