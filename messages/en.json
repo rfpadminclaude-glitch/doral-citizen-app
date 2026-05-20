@@ -92,6 +92,41 @@
       "audit": "Audit log",
       "social": "Social",
       "logout": "Sign out"
+    },
+    "knowledge": {
+      "newDocument": "New document",
+      "new": {
+        "title": "Add to knowledge base",
+        "subtitle": "Manual paste, fetch a URL, or upload a PDF/DOCX. The text is chunked and embedded right after save so the chatbot can cite it.",
+        "back": "Back to documents",
+        "modePaste": "Paste text",
+        "modeUrl": "From URL",
+        "modeFile": "Upload file",
+        "titleField": "Document title",
+        "titlePlaceholder": "e.g. Hurricane evacuation routes",
+        "lang": "Language",
+        "sourceUrl": "Source URL (optional)",
+        "sourceUrlPlaceholder": "https://cityofdoral.com/permits",
+        "body": "Body",
+        "bodyPlaceholder": "Paste the document text…",
+        "urlField": "Page URL to fetch",
+        "urlHint": "Static pages only. JavaScript-rendered sites won't extract correctly.",
+        "fileField": "PDF or DOCX file (max 5 MB)",
+        "filePicker": "Choose a file…",
+        "active": "Active (visible to the assistant)",
+        "submit": "Create + index",
+        "submitting": "Indexing…",
+        "successToast": "Created and indexed — {count} chunks",
+        "errTitleRequired": "Title is required.",
+        "errBodyRequired": "Document text is required.",
+        "errUrlRequired": "Enter a URL starting with http:// or https://",
+        "errFileRequired": "Choose a PDF or DOCX file.",
+        "errTooLarge": "Document text exceeds 50 KB. Split it into smaller documents.",
+        "errEmpty": "We couldn't extract any text from that source.",
+        "errFetch": "Failed to fetch the URL. The site may block scrapers or return non-HTML content.",
+        "errFile": "Could not read that file. Make sure it's a PDF or DOCX under 5 MB.",
+        "errGeneric": "Could not save the document."
+      }
     }
   }
 }

@@ -1,8 +1,9 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, Library, Search, Sparkles } from 'lucide-react';
+import { ArrowRight, Library, Plus, Search, Sparkles } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 import { relativeTime } from '@/lib/admin/format';
 import { cn } from '@/lib/utils';
@@ -22,6 +23,7 @@ type LangFilter = 'all' | 'en' | 'es';
 type StatusFilter = 'all' | 'active' | 'inactive';
 
 export function KnowledgeClient({ docs }: { docs: DocRow[] }) {
+  const t = useTranslations('admin.knowledge');
   const [query, setQuery] = useState('');
   const [lang, setLang] = useState<LangFilter>('all');
   const [status, setStatus] = useState<StatusFilter>('all');
@@ -71,6 +73,13 @@ export function KnowledgeClient({ docs }: { docs: DocRow[] }) {
             aria-label="Search knowledge base"
           />
         </div>
+        <Link
+          href="/admin/knowledge/new"
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-soft transition hover:translate-y-[-1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          <Plus className="h-4 w-4" aria-hidden="true" />
+          {t('newDocument')}
+        </Link>
       </div>
 
       {/* Filter pills */}
@@ -221,7 +230,7 @@ function EmptyState() {
       <div>
         <h3 className="text-sm font-semibold text-foreground">No documents yet</h3>
         <p className="mt-1 text-xs text-muted-foreground">
-          Seed the knowledge base with{' '}
+          Click <span className="font-semibold text-foreground">+ New document</span> above to add one, or seed in bulk with{' '}
           <code className="rounded bg-surface px-1">npx tsx scripts/seed-and-embed.ts</code>.
         </p>
       </div>

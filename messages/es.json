@@ -92,6 +92,41 @@
       "audit": "Auditoría",
       "social": "Redes sociales",
       "logout": "Cerrar sesión"
+    },
+    "knowledge": {
+      "newDocument": "Nuevo documento",
+      "new": {
+        "title": "Añadir a la base de conocimiento",
+        "subtitle": "Pega texto, descarga una URL o sube un PDF/DOCX. El contenido se divide y se indexa al guardar para que el asistente lo cite.",
+        "back": "Volver a documentos",
+        "modePaste": "Pegar texto",
+        "modeUrl": "Desde URL",
+        "modeFile": "Subir archivo",
+        "titleField": "Título del documento",
+        "titlePlaceholder": "ej. Rutas de evacuación por huracán",
+        "lang": "Idioma",
+        "sourceUrl": "URL fuente (opcional)",
+        "sourceUrlPlaceholder": "https://cityofdoral.com/permits",
+        "body": "Cuerpo",
+        "bodyPlaceholder": "Pega el texto del documento…",
+        "urlField": "URL de la página a descargar",
+        "urlHint": "Solo páginas estáticas. Los sitios con JavaScript no se extraerán correctamente.",
+        "fileField": "Archivo PDF o DOCX (máx. 5 MB)",
+        "filePicker": "Elige un archivo…",
+        "active": "Activo (visible para el asistente)",
+        "submit": "Crear + indexar",
+        "submitting": "Indexando…",
+        "successToast": "Creado e indexado — {count} fragmentos",
+        "errTitleRequired": "Se requiere un título.",
+        "errBodyRequired": "Se requiere el texto del documento.",
+        "errUrlRequired": "Ingresa una URL que comience con http:// o https://",
+        "errFileRequired": "Elige un archivo PDF o DOCX.",
+        "errTooLarge": "El texto supera los 50 KB. Divide el documento en partes más pequeñas.",
+        "errEmpty": "No pudimos extraer texto de esa fuente.",
+        "errFetch": "Error al descargar la URL. El sitio puede bloquear bots o devolver contenido no HTML.",
+        "errFile": "No se pudo leer el archivo. Asegúrate de que sea PDF o DOCX y menor a 5 MB.",
+        "errGeneric": "No se pudo guardar el documento."
+      }
     }
   }
 }
