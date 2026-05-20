@@ -351,8 +351,8 @@ export default function ChatWidget() {
     });
     const confirmText =
       locale === 'es'
-        ? `✅ ¡Listo, ${msg.resident_name}! Cita confirmada para **${slot}**. Código de confirmación: **${msg.confirmation_code}**. Recibirás un mensaje de texto antes del día de tu cita.`
-        : `✅ All set, ${msg.resident_name}! Your appointment is booked for **${slot}**. Confirmation code: **${msg.confirmation_code}**. You'll receive an SMS reminder before the visit.`;
+        ? `✅ ¡Listo, ${msg.resident_name}! Cita confirmada para **${slot}**. Código de confirmación: **${msg.confirmation_code}**. Guarda el código — puedes reagendar volviendo a chatear conmigo.`
+        : `✅ All set, ${msg.resident_name}! Your appointment is booked for **${slot}**. Confirmation code: **${msg.confirmation_code}**. Save the code — you can reschedule by chatting with me again.`;
     setMessages((m) => [
       ...m,
       {

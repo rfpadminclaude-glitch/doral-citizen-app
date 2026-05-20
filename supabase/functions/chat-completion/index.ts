@@ -59,6 +59,10 @@ GROUNDING RULES:
 - If the sources do not cover the question, say so plainly and suggest calling 311 or the relevant department. Do not invent details.
 - Never invent a phone number, address, or fee.
 
+FORMATTING:
+- For procedural questions ("how do I…", "what are the steps to…", "how can I…"), structure the answer as a short numbered list (1., 2., 3.). One concrete action per item. Keep each step under two short sentences.
+- For other questions use plain paragraphs. Keep paragraphs short (2-3 sentences).
+
 INTENT DETECTION (this rule is strict — respect user intent over your own judgment):
 - If the user explicitly asks to book, schedule, reserve, or set up an appointment / consultation / inspection — even if you think it isn't strictly necessary — include "book_appointment" in suggested_actions. Trigger words include "book", "schedule", "appointment", "reserve", "set up a time".
 - If the user wants to report an issue, file a complaint, or open a service request, include "create_request" in suggested_actions.
@@ -88,6 +92,10 @@ REGLAS DE FUNDAMENTACIÓN:
 - Cita cada hecho fundamentado como [1], [2], etc., coincidiendo con las fuentes numeradas.
 - Si las fuentes no cubren la pregunta, dilo claramente y sugiere llamar al 311 o al departamento correspondiente. No inventes detalles.
 - Nunca inventes un número de teléfono, dirección o tarifa.
+
+FORMATO:
+- Para preguntas de procedimiento ("¿cómo hago…?", "¿cuáles son los pasos para…?"), estructura la respuesta como una lista numerada corta (1., 2., 3.). Una acción concreta por elemento. Mantén cada paso en máximo dos oraciones cortas.
+- Para otras preguntas usa párrafos planos. Mantén los párrafos cortos (2-3 oraciones).
 
 DETECCIÓN DE INTENCIÓN (regla estricta — respeta la intención del usuario por encima de tu propio juicio):
 - Si el usuario pide explícitamente reservar, programar o agendar una cita / consulta / inspección — incluso si crees que no es estrictamente necesario — incluye "book_appointment" en suggested_actions. Palabras clave: "reservar", "agendar", "programar", "cita", "turno".
@@ -337,6 +345,13 @@ Deno.serve(async (req) => {
       );
     }
   }
+  if (!parsed.suggested_actions.includes('create_request')) {
+    if (detectCreateRequestIntent(body.message, lang)) {
+      parsed.suggested_actions = Array.from(
+        new Set([...parsed.suggested_actions.filter((a) => a !== 'none'), 'create_request'])
+      );
+    }
+  }
 
   // Only keep citation numbers that map to a real source.
   parsed.citations = (parsed.citations ?? []).filter(
@@ -531,6 +546,48 @@ const BOOKING_KEYWORDS = {
 function detectBookingIntent(message: string, lang: 'en' | 'es'): boolean {
   const m = message.toLowerCase();
   const keywords = BOOKING_KEYWORDS[lang] ?? BOOKING_KEYWORDS.en;
+  return keywords.some((k) => m.includes(k));
+}
+
+// Belt-and-suspenders for service-request intent. Mirrors BOOKING_KEYWORDS so
+// the form-trigger fires even if the LLM forgot to emit "create_request" in
+// the structured suggested_actions array.
+const CREATE_REQUEST_KEYWORDS = {
+  en: [
+    'complaint',
+    'complain',
+    'report',
+    'file a complaint',
+    'open a case',
+    'issue',
+    'problem',
+    'broken',
+    'damage',
+    'damaged',
+    'pothole',
+    'graffiti',
+    'illegal dumping',
+    'inspection request'
+  ],
+  es: [
+    'queja',
+    'reclamo',
+    'reportar',
+    'denunciar',
+    'problema',
+    'roto',
+    'daño',
+    'dano',
+    'bache',
+    'grafiti',
+    'vertido ilegal',
+    'inspecci'
+  ]
+};
+
+function detectCreateRequestIntent(message: string, lang: 'en' | 'es'): boolean {
+  const m = message.toLowerCase();
+  const keywords = CREATE_REQUEST_KEYWORDS[lang] ?? CREATE_REQUEST_KEYWORDS.en;
   return keywords.some((k) => m.includes(k));
 }
 
