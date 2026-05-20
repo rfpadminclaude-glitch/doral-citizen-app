@@ -6,16 +6,22 @@ export const dynamic = 'force-dynamic';
 export default async function ConversationsPage() {
   const sb = createClient();
 
-  const [{ data: conversations }, { data: counts }] = await Promise.all([
-    sb
-      .from('conversations')
-      .select(
-        'id, session_id, channel, lang, resident_name, overall_sentiment, last_activity_at, started_at'
-      )
-      .order('last_activity_at', { ascending: false })
-      .limit(200),
-    sb.from('messages').select('conversation_id')
-  ]);
+  // Fetch the conversations first, then scope the message-count query to
+  // just those IDs. The previous implementation did `select('conversation_id')`
+  // with no filter, which on a busy production DB would scan every message
+  // row in the table on every page load (effectively an N+1 in disguise).
+  const { data: conversations } = await sb
+    .from('conversations')
+    .select(
+      'id, session_id, channel, lang, resident_name, overall_sentiment, last_activity_at, started_at'
+    )
+    .order('last_activity_at', { ascending: false })
+    .limit(200);
+
+  const ids = (conversations ?? []).map((c) => c.id);
+  const { data: counts } = ids.length
+    ? await sb.from('messages').select('conversation_id').in('conversation_id', ids)
+    : { data: [] as Array<{ conversation_id: string }> };
 
   const countByConv = new Map<string, number>();
   for (const m of counts ?? []) {
