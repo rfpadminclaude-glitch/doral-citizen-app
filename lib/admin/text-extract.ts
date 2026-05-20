@@ -99,17 +99,15 @@ export async function extractFromUrl(url: string): Promise<{ text: string; title
 }
 
 export async function extractFromPdfBuffer(buf: Buffer): Promise<string> {
-  // Lazy import — see note at top of file. If pdf-parse fails to load (heavy
-  // pdfjs-dist deps don't always initialize on Vercel), the error is thrown
-  // here and reaches the route handler's try/catch as a clean JSON 502.
-  const { PDFParse } = await import('pdf-parse');
-  const parser = new PDFParse({ data: new Uint8Array(buf) });
-  try {
-    const result = await parser.getText();
-    return capAndClean(result.text);
-  } finally {
-    await parser.destroy();
-  }
+  // unpdf wraps pdfjs-dist with the polyfills (DOMMatrix, Promise.withResolvers, etc.)
+  // that the bare library expects but Vercel's Node runtime doesn't provide.
+  // Lazy-imported so the rest of the route still works if this module ever
+  // fails to initialize.
+  const { extractText, getDocumentProxy } = await import('unpdf');
+  const pdf = await getDocumentProxy(new Uint8Array(buf));
+  const result = await extractText(pdf, { mergePages: true });
+  const text = Array.isArray(result.text) ? result.text.join('\n\n') : result.text;
+  return capAndClean(text);
 }
 
 export async function extractFromDocxBuffer(buf: Buffer): Promise<string> {
