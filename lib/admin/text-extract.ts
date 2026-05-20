@@ -11,8 +11,11 @@
  */
 
 import * as cheerio from 'cheerio';
-import mammoth from 'mammoth';
-import { PDFParse } from 'pdf-parse';
+// pdf-parse and mammoth are intentionally NOT statically imported here.
+// pdf-parse@2 transitively loads pdfjs-dist + canvas which can fail to load
+// in Vercel's serverless Node runtime. By dynamically importing them only
+// inside the PDF/DOCX extractor functions, the Paste and URL modes still
+// work even if the heavier deps refuse to initialize.
 
 export const TEXT_MAX_BYTES = 50_000; // ~50 KB after extraction
 export const FETCH_TIMEOUT_MS = 10_000;
@@ -96,7 +99,10 @@ export async function extractFromUrl(url: string): Promise<{ text: string; title
 }
 
 export async function extractFromPdfBuffer(buf: Buffer): Promise<string> {
-  // pdf-parse v2 uses a class-based API. Pass the buffer as a Uint8Array.
+  // Lazy import — see note at top of file. If pdf-parse fails to load (heavy
+  // pdfjs-dist deps don't always initialize on Vercel), the error is thrown
+  // here and reaches the route handler's try/catch as a clean JSON 502.
+  const { PDFParse } = await import('pdf-parse');
   const parser = new PDFParse({ data: new Uint8Array(buf) });
   try {
     const result = await parser.getText();
@@ -107,6 +113,8 @@ export async function extractFromPdfBuffer(buf: Buffer): Promise<string> {
 }
 
 export async function extractFromDocxBuffer(buf: Buffer): Promise<string> {
+  const mammothModule = await import('mammoth');
+  const mammoth = mammothModule.default ?? mammothModule;
   const result = await mammoth.extractRawText({ buffer: buf });
   return capAndClean(result.value);
 }
