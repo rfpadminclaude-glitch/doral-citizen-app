@@ -130,8 +130,8 @@ export default async function AdminDashboard() {
         ))}
       </section>
 
-      {/* Row 1 — trend & schedule. Left stacks Volume + Sentiment; right is
-          Today's appointments. Cells share height via items-stretch. */}
+      {/* Row 1 — trend & schedule. Left stacks Volume + Sentiment; right
+          stacks Today's appointments + Top intents. */}
       <section className="grid gap-4 lg:grid-cols-2 lg:items-stretch">
         <div className="flex flex-col gap-4">
           <VolumeChart
@@ -142,7 +142,7 @@ export default async function AdminDashboard() {
           />
           <SentimentBar data={sentiment} href="/admin/analytics" />
         </div>
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-4">
           <TodaysAppointments
             appointments={todayAppts}
             title={t('todaysAppointmentsTitle')}
@@ -150,19 +150,17 @@ export default async function AdminDashboard() {
             emptyLabel={t('todaysAppointmentsEmpty')}
             href="/admin/requests"
           />
+          <IntentBars
+            data={intents}
+            title={t('intentsTitle')}
+            kicker={t('intentsKicker')}
+            href="/admin/analytics"
+          />
         </div>
       </section>
 
-      {/* Row 2 — pattern & activity. Top intents on the left, Latest activity
-          on the right. Same grid row ⇒ same height. Activity list truncates
-          to the height of its card (handled inside ActivityFeed). */}
-      <section className="grid gap-4 lg:grid-cols-2 lg:items-stretch">
-        <IntentBars
-          data={intents}
-          title={t('intentsTitle')}
-          kicker={t('intentsKicker')}
-          href="/admin/analytics"
-        />
+      {/* Row 2 — full-width latest activity rendered as a responsive card grid. */}
+      <section>
         <ActivityFeed
           events={activity}
           title={t('activityTitle')}

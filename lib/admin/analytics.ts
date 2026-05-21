@@ -235,26 +235,31 @@ export type ActivityEvent = {
   at: string;
   /** Optional href to deep-link from the activity row */
   href?: string;
+  /** Conversation this event originated from, when available. Used by the activity-card dropdown to jump back to the chat. */
+  conversation_id?: string;
 };
 
 export async function dashboardActivityFeed(limit = 8): Promise<ActivityEvent[]> {
   const sb = createAdminClient();
   const [{ data: convs }, { data: srs }, { data: appts }, { data: fb }, { data: ann }] = await Promise.all([
     sb.from('conversations').select('id, session_id, resident_name, lang, started_at').order('started_at', { ascending: false }).limit(limit),
-    sb.from('service_requests').select('id, request_type, title, resident_name, created_at').order('created_at', { ascending: false }).limit(limit),
-    sb.from('appointments').select('id, appointment_type, resident_name, slot_start, created_at').order('created_at', { ascending: false }).limit(limit),
-    sb.from('feedback_ratings').select('id, rating, comment, created_at').order('created_at', { ascending: false }).limit(limit),
+    sb.from('service_requests').select('id, request_type, title, resident_name, conversation_id, created_at').order('created_at', { ascending: false }).limit(limit),
+    sb.from('appointments').select('id, appointment_type, resident_name, slot_start, conversation_id, created_at').order('created_at', { ascending: false }).limit(limit),
+    sb.from('feedback_ratings').select('id, rating, comment, conversation_id, created_at').order('created_at', { ascending: false }).limit(limit),
     sb.from('announcements').select('id, title_en, severity, publish_at').order('publish_at', { ascending: false }).limit(limit)
   ]);
 
   const events: ActivityEvent[] = [];
   for (const c of convs ?? []) {
+    const convId = c.id as string;
     events.push({
-      id: `c_${c.id}`,
+      id: `c_${convId}`,
       type: 'conversation',
       title: (c.resident_name as string | null) ?? `Anonymous #${(c.session_id as string).slice(0, 6).toUpperCase()}`,
       subtitle: `started a ${c.lang} chat`,
-      at: c.started_at as string
+      at: c.started_at as string,
+      href: `/admin/conversations/${convId}`,
+      conversation_id: convId
     });
   }
   for (const s of srs ?? []) {
@@ -265,26 +270,33 @@ export async function dashboardActivityFeed(limit = 8): Promise<ActivityEvent[]>
       title: (s.title as string) ?? 'Service request',
       subtitle: `${s.resident_name ?? 'Anonymous'} · ${s.request_type}`,
       at: s.created_at as string,
-      href: `/admin/requests/${s.id}`
+      href: `/admin/requests/${s.id}`,
+      conversation_id: (s.conversation_id as string | null) ?? undefined
     });
   }
   for (const a of appts ?? []) {
+    const convId = (a.conversation_id as string | null) ?? undefined;
     events.push({
       id: `a_${a.id}`,
       type: 'appointment',
       subtype: a.appointment_type as string,
       title: `${(a.appointment_type as string).replace('_', ' ')} appointment`,
       subtitle: `${a.resident_name ?? 'Anonymous'} · ${new Date(a.slot_start as string).toLocaleString()}`,
-      at: a.created_at as string
+      at: a.created_at as string,
+      href: convId ? `/admin/conversations/${convId}` : undefined,
+      conversation_id: convId
     });
   }
   for (const f of fb ?? []) {
+    const convId = (f.conversation_id as string | null) ?? undefined;
     events.push({
       id: `f_${f.id}`,
       type: 'feedback',
       title: `${(f.rating as number) >= 4 ? '👍' : '👎'} feedback received`,
       subtitle: (f.comment as string | null) ?? undefined,
-      at: f.created_at as string
+      at: f.created_at as string,
+      href: convId ? `/admin/conversations/${convId}` : undefined,
+      conversation_id: convId
     });
   }
   for (const a of ann ?? []) {
@@ -293,7 +305,8 @@ export async function dashboardActivityFeed(limit = 8): Promise<ActivityEvent[]>
       type: 'announcement',
       title: a.title_en as string,
       subtitle: `${a.severity} announcement published`,
-      at: a.publish_at as string
+      at: a.publish_at as string,
+      href: '/admin/announcements'
     });
   }
 
