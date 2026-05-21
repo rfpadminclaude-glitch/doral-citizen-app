@@ -98,7 +98,7 @@ export function ActivityFeed({
   return (
     <div
       className={cn(
-        'flex flex-col rounded-2xl border border-border bg-surface-2 p-5 shadow-soft/40',
+        'flex h-full flex-col rounded-2xl border border-border bg-surface-2 p-5 shadow-soft/40',
         className
       )}
     >

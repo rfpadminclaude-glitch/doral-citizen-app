@@ -25,7 +25,7 @@ export function TodaysAppointments({
   const card = (
     <div
       className={cn(
-        'rounded-2xl border border-border bg-surface-2 p-5 shadow-soft/40 transition',
+        'flex h-full flex-col rounded-2xl border border-border bg-surface-2 p-5 shadow-soft/40 transition',
         href && 'hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-soft'
       )}
     >
