@@ -32,7 +32,7 @@ export function SentimentDonut({ data }: Props) {
   const pct = (n: number) => (grand > 0 ? Math.round((n / grand) * 100) : 0);
 
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-border bg-surface-2 p-5 shadow-soft/40">
+    <div className="rounded-2xl border border-border bg-surface-2 p-5 shadow-soft/40">
       <header className="flex items-center justify-between">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -42,7 +42,7 @@ export function SentimentDonut({ data }: Props) {
         </div>
         <span className="text-xs text-muted-foreground">{grand} replies</span>
       </header>
-      <div className="flex flex-1 items-center gap-4">
+      <div className="mt-4 flex items-center gap-4">
         <div className="relative h-32 w-32 shrink-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>

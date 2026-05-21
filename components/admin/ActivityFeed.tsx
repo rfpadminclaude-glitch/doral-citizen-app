@@ -88,7 +88,7 @@ export function ActivityFeed({
     filter === 'all' ? events : events.filter((e) => bucketOf(e) === filter);
 
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-border bg-surface-2 p-5 shadow-soft/40">
+    <div className="rounded-2xl border border-border bg-surface-2 p-5 shadow-soft/40">
       <header className="flex items-start justify-between gap-2">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -138,7 +138,7 @@ export function ActivityFeed({
         })}
       </div>
 
-      <ul className="mt-3 flex-1 space-y-2">
+      <ul className="mt-3 space-y-2">
         {filtered.length === 0 && (
           <li className="rounded-lg bg-surface px-3 py-6 text-center text-xs text-muted-foreground">
             {events.length === 0

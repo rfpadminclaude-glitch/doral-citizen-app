@@ -19,7 +19,7 @@ export function TodaysAppointments({
   emptyLabel?: string;
 }) {
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-border bg-surface-2 p-5 shadow-soft/40">
+    <div className="rounded-2xl border border-border bg-surface-2 p-5 shadow-soft/40">
       <header className="flex items-start justify-between gap-2">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -35,7 +35,7 @@ export function TodaysAppointments({
       </header>
 
       {appointments.length === 0 ? (
-        <div className="mt-4 flex flex-1 flex-col items-center justify-center gap-2 rounded-xl bg-surface px-4 py-8 text-center">
+        <div className="mt-4 flex flex-col items-center justify-center gap-2 rounded-xl bg-surface px-4 py-6 text-center">
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gold/15 text-gold">
             <Sun className="h-5 w-5" />
           </span>

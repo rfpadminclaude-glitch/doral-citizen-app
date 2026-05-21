@@ -1,14 +1,4 @@
-import {
-  ArrowRight,
-  CalendarClock,
-  FileWarning,
-  Library,
-  Megaphone,
-  MessageSquare,
-  Sparkles,
-  ThumbsUp
-} from 'lucide-react';
-import Link from 'next/link';
+import { CalendarClock, FileWarning, MessageSquare, ThumbsUp } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 import { ActivityFeed } from '@/components/admin/ActivityFeed';
 import { AttentionPanel } from '@/components/admin/AttentionPanel';
@@ -91,38 +81,6 @@ export default async function AdminDashboard() {
 
   const firstName = admin?.display_name?.split(' ')[0] ?? 'Admin';
 
-  const quickActions: Array<{
-    label: string;
-    href: string;
-    icon: React.ReactNode;
-    tone: string;
-  }> = [
-    {
-      label: t('qaAnnouncement'),
-      href: '/admin/announcements',
-      icon: <Megaphone className="h-4 w-4" />,
-      tone: 'bg-primary/10 text-primary'
-    },
-    {
-      label: t('qaKnowledge'),
-      href: '/admin/knowledge',
-      icon: <Library className="h-4 w-4" />,
-      tone: 'bg-secondary/10 text-secondary'
-    },
-    {
-      label: t('qaConversations'),
-      href: '/admin/conversations',
-      icon: <MessageSquare className="h-4 w-4" />,
-      tone: 'bg-gold/15 text-gold'
-    },
-    {
-      label: t('qaAnalytics'),
-      href: '/admin/analytics',
-      icon: <Sparkles className="h-4 w-4" />,
-      tone: 'bg-accent/10 text-accent'
-    }
-  ];
-
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       {/* Hero — greeting + today's summary line */}
@@ -153,8 +111,8 @@ export default async function AdminDashboard() {
         ))}
       </section>
 
-      {/* Needs attention + Today's appointments */}
-      <section className="grid gap-4 lg:grid-cols-3">
+      {/* Needs attention + Today's appointments — cards size to content */}
+      <section className="grid items-start gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <AttentionPanel
             requests={openReqs}
@@ -173,8 +131,8 @@ export default async function AdminDashboard() {
         </div>
       </section>
 
-      {/* Activity feed + sentiment donut */}
-      <section className="grid gap-4 lg:grid-cols-3">
+      {/* Activity feed + sentiment donut — cards size to content */}
+      <section className="grid items-start gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <ActivityFeed
             events={activity}
@@ -185,23 +143,6 @@ export default async function AdminDashboard() {
         <div className="lg:col-span-1">
           <SentimentDonut data={sentiment} />
         </div>
-      </section>
-
-      {/* Quick actions */}
-      <section aria-label="Quick actions" className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        {quickActions.map((a) => (
-          <Link
-            key={a.href}
-            href={a.href}
-            className="group flex items-center gap-2 rounded-2xl border border-border bg-surface-2 px-3 py-2.5 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          >
-            <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${a.tone}`}>
-              {a.icon}
-            </span>
-            <span className="flex-1 truncate text-sm font-medium text-foreground">{a.label}</span>
-            <ArrowRight className="h-3.5 w-3.5 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
-          </Link>
-        ))}
       </section>
     </div>
   );
