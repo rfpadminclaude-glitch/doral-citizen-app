@@ -1,6 +1,7 @@
 'use client';
 
 import { ArrowDownRight, ArrowRight, ArrowUpRight } from 'lucide-react';
+import Link from 'next/link';
 import { Area, AreaChart, ResponsiveContainer } from 'recharts';
 import { cn } from '@/lib/utils';
 
@@ -11,6 +12,8 @@ type Props = {
   spark: number[];
   icon: React.ReactNode;
   tone?: 'primary' | 'secondary' | 'gold' | 'destructive';
+  /** When set, the entire card is rendered as a Link to this URL. */
+  href?: string;
 };
 
 const TONE_BG: Record<NonNullable<Props['tone']>, string> = {
@@ -27,13 +30,18 @@ const TONE_STROKE: Record<NonNullable<Props['tone']>, string> = {
   destructive: 'hsl(var(--destructive))'
 };
 
-export function SparklineCard({ label, total, delta, spark, icon, tone = 'primary' }: Props) {
+export function SparklineCard({ label, total, delta, spark, icon, tone = 'primary', href }: Props) {
   const stroke = TONE_STROKE[tone];
   const data = spark.map((v, i) => ({ i, v }));
   const isPos = delta > 0;
   const isNeg = delta < 0;
-  return (
-    <div className="rounded-2xl border border-border bg-surface-2 p-4 shadow-soft/40 transition hover:shadow-soft">
+  const card = (
+    <div
+      className={cn(
+        'rounded-2xl border border-border bg-surface-2 p-4 shadow-soft/40 transition',
+        href ? 'hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-soft' : 'hover:shadow-soft'
+      )}
+    >
       <div className="flex items-start justify-between">
         <span className={cn('flex h-8 w-8 items-center justify-center rounded-lg', TONE_BG[tone])}>
           {icon}
@@ -86,5 +94,15 @@ export function SparklineCard({ label, total, delta, spark, icon, tone = 'primar
       </div>
       <p className="mt-1 text-[10px] text-muted-foreground">last 7 days</p>
     </div>
+  );
+  return href ? (
+    <Link
+      href={href}
+      className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+    >
+      {card}
+    </Link>
+  ) : (
+    card
   );
 }

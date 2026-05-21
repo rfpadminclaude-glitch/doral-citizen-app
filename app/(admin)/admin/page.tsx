@@ -1,27 +1,44 @@
 import { CalendarClock, FileWarning, MessageSquare, ThumbsUp } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 import { ActivityFeed } from '@/components/admin/ActivityFeed';
-import { AttentionPanel } from '@/components/admin/AttentionPanel';
+import { IntentBars } from '@/components/admin/IntentBars';
 import { SentimentDonut } from '@/components/admin/SentimentDonut';
 import { SparklineCard } from '@/components/admin/SparklineCard';
 import { TodaysAppointments } from '@/components/admin/TodaysAppointments';
+import { VolumeChart } from '@/components/admin/VolumeChart';
 import {
   dashboardActivityFeed,
   dashboardKpis,
-  openHighPriorityRequests,
   sentimentTrend,
-  todaysAppointments
+  todaysAppointments,
+  topIntents,
+  volumeByDay
 } from '@/lib/admin/analytics';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export const dynamic = 'force-dynamic';
 
-const KPI_ICON: Record<string, { icon: React.ReactNode; tone: 'primary' | 'secondary' | 'gold' | 'destructive' }> = {
-  conversations: { icon: <MessageSquare className="h-4 w-4" />, tone: 'primary' },
-  service_requests: { icon: <FileWarning className="h-4 w-4" />, tone: 'destructive' },
-  appointments: { icon: <CalendarClock className="h-4 w-4" />, tone: 'gold' },
-  feedback: { icon: <ThumbsUp className="h-4 w-4" />, tone: 'secondary' }
+const KPI_META: Record<
+  string,
+  { icon: React.ReactNode; tone: 'primary' | 'secondary' | 'gold' | 'destructive'; href: string }
+> = {
+  conversations: {
+    icon: <MessageSquare className="h-4 w-4" />,
+    tone: 'primary',
+    href: '/admin/conversations'
+  },
+  service_requests: {
+    icon: <FileWarning className="h-4 w-4" />,
+    tone: 'destructive',
+    href: '/admin/requests'
+  },
+  appointments: {
+    icon: <CalendarClock className="h-4 w-4" />,
+    tone: 'gold',
+    href: '/admin/requests'
+  },
+  feedback: { icon: <ThumbsUp className="h-4 w-4" />, tone: 'secondary', href: '/admin/audit' }
 };
 
 const COMPLAINT_TYPES = ['code_violation', 'complaint', 'pothole'];
@@ -64,13 +81,14 @@ export default async function AdminDashboard() {
 
   const t = await getTranslations('admin.dashboard');
 
-  const [kpis, activity, sentiment, openReqs, todayAppts, today] = await Promise.all([
+  const [kpis, activity, sentiment, todayAppts, today, volume, intents] = await Promise.all([
     dashboardKpis(),
-    dashboardActivityFeed(12),
+    dashboardActivityFeed(15),
     sentimentTrend(7),
-    openHighPriorityRequests(5),
     todaysAppointments(),
-    todaysCounts()
+    todaysCounts(),
+    volumeByDay(14),
+    topIntents(7)
   ]);
 
   const dateLabel = new Date().toLocaleDateString(undefined, {
@@ -96,7 +114,7 @@ export default async function AdminDashboard() {
         </p>
       </header>
 
-      {/* KPI sparkline cards */}
+      {/* KPI sparkline cards — each links to its detail page */}
       <section aria-label="Key metrics" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {kpis.map((k) => (
           <SparklineCard
@@ -105,43 +123,51 @@ export default async function AdminDashboard() {
             total={k.total}
             delta={k.delta}
             spark={k.spark}
-            icon={KPI_ICON[k.key].icon}
-            tone={KPI_ICON[k.key].tone}
+            icon={KPI_META[k.key].icon}
+            tone={KPI_META[k.key].tone}
+            href={KPI_META[k.key].href}
           />
         ))}
       </section>
 
-      {/* Needs attention + Today's appointments — cards size to content */}
-      <section className="grid items-start gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <AttentionPanel
-            requests={openReqs}
-            title={t('needsAttentionTitle')}
-            kicker={t('needsAttentionKicker')}
-            emptyLabel={t('needsAttentionEmpty')}
+      {/* 50/50 body: charts (left) | notifications (right). Equal column
+          heights via grid + flex-1 on the last card in each column. */}
+      <section className="grid gap-4 lg:grid-cols-2 lg:items-stretch">
+        {/* Left column — charts */}
+        <div className="flex flex-col gap-4">
+          <VolumeChart
+            data={volume}
+            title={t('volumeTitle')}
+            kicker={t('volumeKicker')}
+            href="/admin/conversations"
+          />
+          <SentimentDonut data={sentiment} href="/admin/analytics" />
+          <IntentBars
+            data={intents}
+            title={t('intentsTitle')}
+            kicker={t('intentsKicker')}
+            href="/admin/analytics"
+            className="flex-1"
           />
         </div>
-        <div className="lg:col-span-1">
+
+        {/* Right column — notifications */}
+        <div className="flex flex-col gap-4">
           <TodaysAppointments
             appointments={todayAppts}
             title={t('todaysAppointmentsTitle')}
             kicker={t('todaysAppointmentsKicker')}
             emptyLabel={t('todaysAppointmentsEmpty')}
+            href="/admin/requests"
           />
-        </div>
-      </section>
-
-      {/* Activity feed + sentiment donut — cards size to content */}
-      <section className="grid items-start gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
           <ActivityFeed
             events={activity}
             title={t('activityTitle')}
             kicker={t('activityKicker')}
+            viewAllHref="/admin/audit"
+            viewAllLabel={t('viewAll')}
+            className="flex-1"
           />
-        </div>
-        <div className="lg:col-span-1">
-          <SentimentDonut data={sentiment} />
         </div>
       </section>
     </div>

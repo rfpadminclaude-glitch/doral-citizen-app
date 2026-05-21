@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  ArrowRight,
   CalendarClock,
   FileWarning,
   Library,
@@ -65,12 +66,19 @@ export function ActivityFeed({
   events,
   title = 'Latest activity',
   kicker = 'Across the assistant',
-  initialFilter = 'all'
+  initialFilter = 'all',
+  viewAllHref,
+  viewAllLabel = 'View all',
+  className
 }: {
   events: ActivityEvent[];
   title?: string;
   kicker?: string;
   initialFilter?: Filter;
+  /** When set, renders a "View all →" link in the header (no nested-link issue since rows are inner Links). */
+  viewAllHref?: string;
+  viewAllLabel?: string;
+  className?: string;
 }) {
   const [filter, setFilter] = useState<Filter>(initialFilter);
 
@@ -88,7 +96,12 @@ export function ActivityFeed({
     filter === 'all' ? events : events.filter((e) => bucketOf(e) === filter);
 
   return (
-    <div className="rounded-2xl border border-border bg-surface-2 p-5 shadow-soft/40">
+    <div
+      className={cn(
+        'flex flex-col rounded-2xl border border-border bg-surface-2 p-5 shadow-soft/40',
+        className
+      )}
+    >
       <header className="flex items-start justify-between gap-2">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -96,9 +109,20 @@ export function ActivityFeed({
           </p>
           <h3 className="text-sm font-semibold text-foreground">{title}</h3>
         </div>
-        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
-          {events.length}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+            {events.length}
+          </span>
+          {viewAllHref && (
+            <Link
+              href={viewAllHref}
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+            >
+              {viewAllLabel}
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+          )}
+        </div>
       </header>
 
       {/* Filter chips */}

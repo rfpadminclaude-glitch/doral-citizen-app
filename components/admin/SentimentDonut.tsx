@@ -1,10 +1,13 @@
 'use client';
 
+import Link from 'next/link';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import type { SentimentDay } from '@/lib/admin/analytics';
+import { cn } from '@/lib/utils';
 
 type Props = {
   data: SentimentDay[];
+  href?: string;
 };
 
 const COLORS = {
@@ -13,7 +16,7 @@ const COLORS = {
   negative: 'hsl(var(--destructive))'
 };
 
-export function SentimentDonut({ data }: Props) {
+export function SentimentDonut({ data, href }: Props) {
   const totals = data.reduce(
     (acc, d) => ({
       positive: acc.positive + d.positive,
@@ -31,8 +34,13 @@ export function SentimentDonut({ data }: Props) {
 
   const pct = (n: number) => (grand > 0 ? Math.round((n / grand) * 100) : 0);
 
-  return (
-    <div className="rounded-2xl border border-border bg-surface-2 p-5 shadow-soft/40">
+  const card = (
+    <div
+      className={cn(
+        'rounded-2xl border border-border bg-surface-2 p-5 shadow-soft/40 transition',
+        href && 'hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-soft'
+      )}
+    >
       <header className="flex items-center justify-between">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -88,5 +96,15 @@ export function SentimentDonut({ data }: Props) {
         </ul>
       </div>
     </div>
+  );
+  return href ? (
+    <Link
+      href={href}
+      className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+    >
+      {card}
+    </Link>
+  ) : (
+    card
   );
 }

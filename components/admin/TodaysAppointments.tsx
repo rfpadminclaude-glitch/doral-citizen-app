@@ -1,5 +1,7 @@
 import { CalendarClock, Sun } from 'lucide-react';
+import Link from 'next/link';
 import type { TodayAppointment } from '@/lib/admin/analytics';
+import { cn } from '@/lib/utils';
 
 const TYPE_LABEL: Record<string, string> = {
   permit_renewal: 'Permit renewal',
@@ -11,15 +13,22 @@ export function TodaysAppointments({
   appointments,
   title = "Today's appointments",
   kicker = 'Booked slots, soonest first',
-  emptyLabel = 'No appointments booked for today.'
+  emptyLabel = 'No appointments booked for today.',
+  href
 }: {
   appointments: TodayAppointment[];
   title?: string;
   kicker?: string;
   emptyLabel?: string;
+  href?: string;
 }) {
-  return (
-    <div className="rounded-2xl border border-border bg-surface-2 p-5 shadow-soft/40">
+  const card = (
+    <div
+      className={cn(
+        'rounded-2xl border border-border bg-surface-2 p-5 shadow-soft/40 transition',
+        href && 'hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-soft'
+      )}
+    >
       <header className="flex items-start justify-between gap-2">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -77,5 +86,15 @@ export function TodaysAppointments({
         </ul>
       )}
     </div>
+  );
+  return href ? (
+    <Link
+      href={href}
+      className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+    >
+      {card}
+    </Link>
+  ) : (
+    card
   );
 }

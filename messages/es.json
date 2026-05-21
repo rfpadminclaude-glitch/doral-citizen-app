@@ -111,7 +111,12 @@
       "todaysAppointmentsKicker": "Reservadas, próximas primero",
       "todaysAppointmentsEmpty": "Sin citas reservadas para hoy.",
       "activityTitle": "Actividad reciente",
-      "activityKicker": "En todo el asistente"
+      "activityKicker": "En todo el asistente",
+      "viewAll": "Ver todo",
+      "volumeTitle": "Volumen de conversaciones",
+      "volumeKicker": "Chats diarios · últimos 14 días",
+      "intentsTitle": "Intenciones principales",
+      "intentsKicker": "Últimos 7 días, por tipo de solicitud"
     },
     "requests": {
       "title": "Solicitudes de servicio",

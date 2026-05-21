@@ -111,7 +111,12 @@
       "todaysAppointmentsKicker": "Booked slots, soonest first",
       "todaysAppointmentsEmpty": "No appointments booked for today.",
       "activityTitle": "Latest activity",
-      "activityKicker": "Across the assistant"
+      "activityKicker": "Across the assistant",
+      "viewAll": "View all",
+      "volumeTitle": "Conversation volume",
+      "volumeKicker": "Daily resident chats · last 14 days",
+      "intentsTitle": "Top intents",
+      "intentsKicker": "Last 7 days, by request type"
     },
     "requests": {
       "title": "Service requests",
