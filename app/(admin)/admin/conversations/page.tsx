@@ -1,43 +1,40 @@
-import { createClient } from '@/lib/supabase/server';
+import { listConversations, PAGE_SIZE, type ConvFilters } from '@/lib/admin/conversations';
 import { ConversationsClient } from './ConversationsClient';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ConversationsPage() {
-  const sb = createClient();
+function pickStr<T extends string>(value: string | string[] | undefined, allowed: T[]): T | undefined {
+  if (typeof value !== 'string') return undefined;
+  return (allowed as string[]).includes(value) ? (value as T) : undefined;
+}
 
-  // Fetch the conversations first, then scope the message-count query to
-  // just those IDs. The previous implementation did `select('conversation_id')`
-  // with no filter, which on a busy production DB would scan every message
-  // row in the table on every page load (effectively an N+1 in disguise).
-  const { data: conversations } = await sb
-    .from('conversations')
-    .select(
-      'id, session_id, channel, lang, resident_name, overall_sentiment, last_activity_at, started_at'
-    )
-    .order('last_activity_at', { ascending: false })
-    .limit(200);
+export default async function ConversationsPage({
+  searchParams
+}: {
+  searchParams: Record<string, string | string[] | undefined>;
+}) {
+  const filters: ConvFilters = {
+    q: typeof searchParams.q === 'string' ? searchParams.q : undefined,
+    channel: pickStr(searchParams.channel, ['web', 'sms', 'whatsapp', 'facebook', 'all']),
+    lang: pickStr(searchParams.lang, ['en', 'es', 'all']),
+    sentiment: pickStr(searchParams.sentiment, [
+      'positive',
+      'neutral',
+      'negative',
+      'frustrated',
+      'urgent',
+      'all'
+    ]),
+    status: pickStr(searchParams.status, ['active', 'closed', 'all']),
+    from: typeof searchParams.from === 'string' ? searchParams.from : undefined,
+    to: typeof searchParams.to === 'string' ? searchParams.to : undefined,
+    page:
+      typeof searchParams.page === 'string' && /^\d+$/.test(searchParams.page)
+        ? Math.max(1, parseInt(searchParams.page, 10))
+        : 1
+  };
 
-  const ids = (conversations ?? []).map((c) => c.id);
-  const { data: counts } = ids.length
-    ? await sb.from('messages').select('conversation_id').in('conversation_id', ids)
-    : { data: [] as Array<{ conversation_id: string }> };
-
-  const countByConv = new Map<string, number>();
-  for (const m of counts ?? []) {
-    countByConv.set(m.conversation_id, (countByConv.get(m.conversation_id) ?? 0) + 1);
-  }
-
-  const rows = (conversations ?? []).map((c) => ({
-    id: c.id,
-    session_id: c.session_id,
-    channel: c.channel,
-    lang: c.lang,
-    resident_name: c.resident_name as string | null,
-    overall_sentiment: c.overall_sentiment as string | null,
-    last_activity_at: c.last_activity_at as string | null,
-    msg_count: countByConv.get(c.id) ?? 0
-  }));
+  const result = await listConversations(filters);
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -47,11 +44,25 @@ export default async function ConversationsPage() {
         </p>
         <h1 className="mt-1 text-2xl font-semibold text-foreground sm:text-3xl">Conversations</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Every resident chat session, newest first. Click a row to read the full transcript.
+          Every resident chat session, newest first. Filter and click a row to read the transcript.
         </p>
       </header>
 
-      <ConversationsClient rows={rows} />
+      <ConversationsClient
+        rows={result.rows}
+        total={result.total}
+        page={result.page}
+        pageSize={PAGE_SIZE}
+        filters={{
+          q: filters.q ?? '',
+          channel: filters.channel ?? 'all',
+          lang: filters.lang ?? 'all',
+          sentiment: filters.sentiment ?? 'all',
+          status: filters.status ?? 'all',
+          from: filters.from ?? '',
+          to: filters.to ?? ''
+        }}
+      />
     </div>
   );
 }
