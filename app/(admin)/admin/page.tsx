@@ -2,7 +2,7 @@ import { CalendarClock, FileWarning, MessageSquare, ThumbsUp } from 'lucide-reac
 import { getTranslations } from 'next-intl/server';
 import { ActivityFeed } from '@/components/admin/ActivityFeed';
 import { IntentBars } from '@/components/admin/IntentBars';
-import { SentimentDonut } from '@/components/admin/SentimentDonut';
+import { SentimentBar } from '@/components/admin/SentimentBar';
 import { SparklineCard } from '@/components/admin/SparklineCard';
 import { TodaysAppointments } from '@/components/admin/TodaysAppointments';
 import { VolumeChart } from '@/components/admin/VolumeChart';
@@ -130,10 +130,9 @@ export default async function AdminDashboard() {
         ))}
       </section>
 
-      {/* 50/50 body: charts (left) | notifications (right). Equal column
-          heights via grid + flex-1 on the last card in each column. */}
+      {/* Row 1 — trend & schedule. Left stacks Volume + Sentiment; right is
+          Today's appointments. Cells share height via items-stretch. */}
       <section className="grid gap-4 lg:grid-cols-2 lg:items-stretch">
-        {/* Left column — charts */}
         <div className="flex flex-col gap-4">
           <VolumeChart
             data={volume}
@@ -141,18 +140,9 @@ export default async function AdminDashboard() {
             kicker={t('volumeKicker')}
             href="/admin/conversations"
           />
-          <SentimentDonut data={sentiment} href="/admin/analytics" />
-          <IntentBars
-            data={intents}
-            title={t('intentsTitle')}
-            kicker={t('intentsKicker')}
-            href="/admin/analytics"
-            className="flex-1"
-          />
+          <SentimentBar data={sentiment} href="/admin/analytics" />
         </div>
-
-        {/* Right column — notifications */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col">
           <TodaysAppointments
             appointments={todayAppts}
             title={t('todaysAppointmentsTitle')}
@@ -160,15 +150,26 @@ export default async function AdminDashboard() {
             emptyLabel={t('todaysAppointmentsEmpty')}
             href="/admin/requests"
           />
-          <ActivityFeed
-            events={activity}
-            title={t('activityTitle')}
-            kicker={t('activityKicker')}
-            viewAllHref="/admin/audit"
-            viewAllLabel={t('viewAll')}
-            className="flex-1"
-          />
         </div>
+      </section>
+
+      {/* Row 2 — pattern & activity. Top intents on the left, Latest activity
+          on the right. Same grid row ⇒ same height. Activity list truncates
+          to the height of its card (handled inside ActivityFeed). */}
+      <section className="grid gap-4 lg:grid-cols-2 lg:items-stretch">
+        <IntentBars
+          data={intents}
+          title={t('intentsTitle')}
+          kicker={t('intentsKicker')}
+          href="/admin/analytics"
+        />
+        <ActivityFeed
+          events={activity}
+          title={t('activityTitle')}
+          kicker={t('activityKicker')}
+          viewAllHref="/admin/audit"
+          viewAllLabel={t('viewAll')}
+        />
       </section>
     </div>
   );

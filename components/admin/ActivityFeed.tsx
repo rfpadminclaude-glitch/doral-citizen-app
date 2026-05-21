@@ -162,7 +162,7 @@ export function ActivityFeed({
         })}
       </div>
 
-      <ul className="mt-3 space-y-2">
+      <ul className="mt-3 max-h-[420px] space-y-2 overflow-hidden">
         {filtered.length === 0 && (
           <li className="rounded-lg bg-surface px-3 py-6 text-center text-xs text-muted-foreground">
             {events.length === 0
