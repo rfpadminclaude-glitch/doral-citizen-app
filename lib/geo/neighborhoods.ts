@@ -16,7 +16,7 @@ type NeighborhoodFeature = {
   geometry: { type: 'Polygon'; coordinates: number[][][] };
 };
 
-const FEATURES = (doralGeoRaw as { features: NeighborhoodFeature[] }).features;
+const FEATURES = (doralGeoRaw as unknown as { features: NeighborhoodFeature[] }).features;
 
 export type Neighborhood = {
   slug: string;

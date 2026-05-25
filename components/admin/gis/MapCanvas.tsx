@@ -280,7 +280,7 @@ function HeatLayer({ points }: { points: Array<[number, number, number]> }) {
       await import('leaflet.heat');
       if (cancelled) return;
 
-      // @ts-expect-error — leaflet.heat extends L at runtime
+      // leaflet.heat extends L at runtime; @types/leaflet.heat provides the typing.
       layer = L.heatLayer(points, {
         radius: 25,
         blur: 18,
