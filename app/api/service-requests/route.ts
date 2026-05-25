@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { geocode } from '@/lib/geo/nominatim';
+import { tagNeighborhood } from '@/lib/geo/neighborhoods';
+import { upsertCitizenFromRequest } from '@/lib/geo/citizens';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -20,7 +23,10 @@ const Body = z.object({
   description: z.string().min(10).max(2000),
   resident_name: z.string().min(1).max(160),
   resident_contact: z.string().min(3).max(160),
-  priority: z.enum(['low', 'normal', 'high', 'urgent']).optional()
+  priority: z.enum(['low', 'normal', 'high', 'urgent']).optional(),
+  address_line: z.string().min(3).max(200),
+  client_lat: z.number().min(-90).max(90).optional(),
+  client_lng: z.number().min(-180).max(180).optional()
 });
 
 function caseCode(uuid: string): string {
@@ -51,6 +57,35 @@ export async function POST(req: NextRequest) {
     .eq('session_id', parsed.data.conversation_session_id)
     .maybeSingle();
 
+  // Resolve coordinates: prefer a client-supplied geolocation pin, else
+  // geocode the address via Nominatim. Falls back to null on failure;
+  // the request is still recorded so an admin can geocode it later.
+  let lat: number | null = parsed.data.client_lat ?? null;
+  let lng: number | null = parsed.data.client_lng ?? null;
+  let geocodeFailed = false;
+
+  if (lat == null || lng == null) {
+    const hit = await geocode(parsed.data.address_line);
+    if (hit) {
+      lat = hit.lat;
+      lng = hit.lng;
+    } else {
+      geocodeFailed = true;
+    }
+  }
+
+  const neighborhood_slug =
+    lat != null && lng != null ? tagNeighborhood(lat, lng) : null;
+
+  const citizen_id = await upsertCitizenFromRequest({
+    name: parsed.data.resident_name,
+    contact: parsed.data.resident_contact,
+    address_line: parsed.data.address_line,
+    lat,
+    lng,
+    neighborhood_slug
+  });
+
   const { data: sr, error } = await sb
     .from('service_requests')
     .insert({
@@ -61,7 +96,12 @@ export async function POST(req: NextRequest) {
       status: 'new',
       priority: parsed.data.priority ?? 'normal',
       resident_name: parsed.data.resident_name,
-      resident_contact: parsed.data.resident_contact
+      resident_contact: parsed.data.resident_contact,
+      citizen_id,
+      address_line: parsed.data.address_line,
+      lat,
+      lng,
+      neighborhood_slug
     })
     .select('id, status, request_type, title, created_at')
     .single();
@@ -77,7 +117,10 @@ export async function POST(req: NextRequest) {
     entity_id: sr.id,
     metadata: {
       request_type: sr.request_type,
-      session_id: parsed.data.conversation_session_id
+      session_id: parsed.data.conversation_session_id,
+      neighborhood_slug,
+      geocoded: !geocodeFailed && lat != null,
+      geocode_failed: geocodeFailed
     }
   });
 

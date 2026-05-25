@@ -7,6 +7,7 @@ import {
   ClipboardCheck,
   Construction,
   Copy,
+  Crosshair,
   FileText,
   FileWarning,
   Loader2,
@@ -65,6 +66,11 @@ const STRINGS = {
     titlePlaceholder: 'Pothole on NW 50th',
     description: 'Description',
     descriptionPlaceholder: 'A few sentences with the location and what you saw.',
+    addressField: 'Address',
+    addressPlaceholder: '8401 NW 53rd Ter, Doral, FL',
+    useMyLocation: 'Use my location',
+    pinCaptured: 'Pin captured',
+    locationDenied: 'Location permission denied',
     yourName: 'Your name',
     namePlaceholder: 'Jane Doral',
     contact: 'Phone or email',
@@ -100,6 +106,11 @@ const STRINGS = {
     titlePlaceholder: 'Bache en NW 50th',
     description: 'Descripción',
     descriptionPlaceholder: 'Un par de oraciones con la ubicación y lo que viste.',
+    addressField: 'Dirección',
+    addressPlaceholder: '8401 NW 53rd Ter, Doral, FL',
+    useMyLocation: 'Usar mi ubicación',
+    pinCaptured: 'Ubicación capturada',
+    locationDenied: 'Permiso de ubicación denegado',
     yourName: 'Tu nombre',
     namePlaceholder: 'Jane Doral',
     contact: 'Teléfono o correo',
@@ -144,6 +155,10 @@ export function ServiceRequestForm({ sessionId, lang, initialType, onSubmitted, 
   const [type, setType] = useState<RequestType>(initialType ?? 'general');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [address, setAddress] = useState('');
+  const [clientCoords, setClientCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [contact, setContact] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -151,6 +166,26 @@ export function ServiceRequestForm({ sessionId, lang, initialType, onSubmitted, 
   const [success, setSuccess] = useState<SubmittedMessage | null>(null);
   const [codeCopied, setCodeCopied] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+
+  function captureLocation() {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setLocationError(s.locationDenied);
+      return;
+    }
+    setLocating(true);
+    setLocationError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setClientCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setLocating(false);
+      },
+      () => {
+        setLocationError(s.locationDenied);
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 }
+    );
+  }
 
   // Scroll into view on mount so the whole form is reachable.
   useEffect(() => {
@@ -211,7 +246,13 @@ export function ServiceRequestForm({ sessionId, lang, initialType, onSubmitted, 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!title.trim() || !description.trim() || !name.trim() || !contact.trim()) {
+    if (
+      !title.trim() ||
+      !description.trim() ||
+      !address.trim() ||
+      !name.trim() ||
+      !contact.trim()
+    ) {
       setError(s.required);
       return;
     }
@@ -230,7 +271,10 @@ export function ServiceRequestForm({ sessionId, lang, initialType, onSubmitted, 
           title: title.trim(),
           description: description.trim(),
           resident_name: name.trim(),
-          resident_contact: contact.trim()
+          resident_contact: contact.trim(),
+          address_line: address.trim(),
+          client_lat: clientCoords?.lat,
+          client_lng: clientCoords?.lng
         })
       });
       const data = await resp.json();
@@ -332,6 +376,49 @@ export function ServiceRequestForm({ sessionId, lang, initialType, onSubmitted, 
               <p className="mt-1 text-[10px] text-muted-foreground">
                 {description.length}/2000
               </p>
+            </Field>
+
+            {/* Address */}
+            <Field label={s.addressField} htmlFor="sr-address">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2.5 transition focus-within:border-primary focus-within:shadow-soft">
+                  <MapPin className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                  <input
+                    id="sr-address"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder={s.addressPlaceholder}
+                    className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+                    autoComplete="street-address"
+                    required
+                    maxLength={200}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={captureLocation}
+                    disabled={locating}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground transition hover:border-primary hover:text-primary disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  >
+                    {locating ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Crosshair className="h-3.5 w-3.5" />
+                    )}
+                    {s.useMyLocation}
+                  </button>
+                  {clientCoords && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-medium text-success">
+                      <Check className="h-3 w-3" />
+                      {s.pinCaptured}
+                    </span>
+                  )}
+                  {locationError && (
+                    <span className="text-[10px] text-muted-foreground">{locationError}</span>
+                  )}
+                </div>
+              </div>
             </Field>
 
             {/* Name */}

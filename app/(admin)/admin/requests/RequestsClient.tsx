@@ -7,20 +7,33 @@ import {
   Construction,
   FileText,
   FileWarning,
+  List,
+  Map as MapIcon,
   MapPin,
   Megaphone,
   TreePine
 } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useMemo, useState, useTransition } from 'react';
-import { caseCodeFromUuid, relativeTime } from '@/lib/admin/format';
+import { useCallback, useMemo, useState, useTransition } from 'react';
+import { caseCodeFromUuid } from '@/lib/admin/format';
+import { TimeAgo } from '@/components/admin/TimeAgo';
 import { cn } from '@/lib/utils';
+import type { Neighborhood } from '@/lib/geo/neighborhoods';
+import {
+  REQUEST_STATUSES,
+  REQUEST_TYPES,
+  type GisFilters,
+  type RequestStatus,
+  type RequestType
+} from '@/components/admin/gis/types';
+import { RequestsMapView } from './RequestsMapView';
 
 type Status = 'new' | 'in_progress' | 'resolved' | 'closed';
 type Priority = 'low' | 'normal' | 'high' | 'urgent';
 type StatusFilter = 'all' | Status;
+type ViewMode = 'list' | 'map';
 
 export type RequestRow = {
   id: string;
@@ -31,6 +44,10 @@ export type RequestRow = {
   priority: Priority;
   resident_name: string | null;
   resident_contact: string | null;
+  lat: number | null;
+  lng: number | null;
+  neighborhood_slug: string | null;
+  address_line: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -80,9 +97,48 @@ const STATUS_LABEL: Record<
   closed: 'statusClosed'
 };
 
-export function RequestsClient({ rows: initialRows }: { rows: RequestRow[] }) {
+function filtersFromSearchParams(sp: URLSearchParams): GisFilters {
+  const statusCsv = sp.get('status');
+  const typeCsv = sp.get('type');
+  const validStatuses = new Set<string>(REQUEST_STATUSES);
+  const validTypes = new Set<string>(REQUEST_TYPES);
+  const statuses = (statusCsv ? statusCsv.split(',') : [])
+    .map((s) => s.trim())
+    .filter((s) => validStatuses.has(s)) as RequestStatus[];
+  const types = (typeCsv ? typeCsv.split(',') : [])
+    .map((s) => s.trim())
+    .filter((s) => validTypes.has(s)) as RequestType[];
+  const rawSource = sp.get('source');
+  const source =
+    rawSource === 'demo' || rawSource === 'real' || rawSource === 'all'
+      ? (rawSource as 'demo' | 'real' | 'all')
+      : undefined;
+  return {
+    types,
+    statuses,
+    neighborhood: sp.get('neighborhood') || null,
+    from: sp.get('from') || undefined,
+    to: sp.get('to') || undefined,
+    source
+  };
+}
+
+export function RequestsClient({
+  rows: initialRows,
+  neighborhoods
+}: {
+  rows: RequestRow[];
+  neighborhoods: Neighborhood[];
+}) {
   const t = useTranslations('admin.requests');
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const initialView: ViewMode = searchParams.get('view') === 'map' ? 'map' : 'list';
+  const [view, setView] = useState<ViewMode>(initialView);
+  const [mapFilters, setMapFilters] = useState<GisFilters>(() =>
+    filtersFromSearchParams(new URLSearchParams(searchParams.toString()))
+  );
   const [rows, setRows] = useState(initialRows);
   const [filter, setFilter] = useState<StatusFilter>('all');
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -99,7 +155,23 @@ export function RequestsClient({ rows: initialRows }: { rows: RequestRow[] }) {
     [rows]
   );
 
+  const unmappedCount = useMemo(() => rows.filter((r) => r.lat == null || r.lng == null).length, [
+    rows
+  ]);
+
   const filtered = filter === 'all' ? rows : rows.filter((r) => r.status === filter);
+
+  const changeView = useCallback(
+    (next: ViewMode) => {
+      setView(next);
+      const sp = new URLSearchParams(searchParams.toString());
+      if (next === 'map') sp.set('view', 'map');
+      else sp.delete('view');
+      const qs = sp.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams]
+  );
 
   async function changeStatus(id: string, status: Status) {
     setPendingId(id);
@@ -139,32 +211,41 @@ export function RequestsClient({ rows: initialRows }: { rows: RequestRow[] }) {
         ))}
       </div>
 
-      {/* Filter chips */}
-      <div
-        role="radiogroup"
-        aria-label="Filter by status"
-        className="flex flex-wrap items-center gap-1.5"
-      >
-        {(['all', 'new', 'in_progress', 'resolved', 'closed'] as const).map((f) => {
-          const active = filter === f;
-          return (
-            <button
-              key={f}
-              type="button"
-              role="radio"
-              aria-checked={active}
-              onClick={() => setFilter(f)}
-              className={cn(
-                'rounded-full border px-3 py-1 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-                active
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-border bg-surface text-muted-foreground hover:border-primary/40 hover:text-foreground'
-              )}
-            >
-              {t(FILTER_LABEL[f])}
-            </button>
-          );
-        })}
+      {/* View toggle + unmapped badge */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div
+          role="tablist"
+          aria-label={t('viewToggleLabel')}
+          className="inline-flex rounded-full border border-border bg-surface p-0.5"
+        >
+          {(['list', 'map'] as const).map((v) => {
+            const active = view === v;
+            const Icon = v === 'list' ? List : MapIcon;
+            return (
+              <button
+                key={v}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => changeView(v)}
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                  active
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {v === 'list' ? t('viewList') : t('viewMap')}
+              </button>
+            );
+          })}
+        </div>
+        {view === 'map' && unmappedCount > 0 && (
+          <span className="rounded-full border border-border bg-surface px-2.5 py-1 text-[11px] text-muted-foreground">
+            {t('unmapped', { count: unmappedCount })}
+          </span>
+        )}
       </div>
 
       {/* Toast */}
@@ -182,98 +263,137 @@ export function RequestsClient({ rows: initialRows }: { rows: RequestRow[] }) {
         )}
       </AnimatePresence>
 
-      {/* Cards list */}
-      {filtered.length === 0 ? (
-        <div className="rounded-2xl border border-border bg-surface-2 p-12 text-center">
-          <ClipboardCheck className="mx-auto h-8 w-8 text-muted-foreground" />
-          <h3 className="mt-3 text-sm font-semibold text-foreground">{t('empty')}</h3>
-          <p className="mt-1 text-xs text-muted-foreground">{t('emptyHint')}</p>
-        </div>
+      {view === 'map' ? (
+        <RequestsMapView
+          rows={rows}
+          neighborhoods={neighborhoods}
+          filters={mapFilters}
+          onFiltersChange={setMapFilters}
+        />
       ) : (
-        <div className="grid gap-3">
-          <AnimatePresence initial={false}>
-            {filtered.map((r) => {
-              const Icon = TYPE_ICON[r.request_type] ?? ClipboardCheck;
+        <>
+          {/* Filter chips (list view only) */}
+          <div
+            role="radiogroup"
+            aria-label="Filter by status"
+            className="flex flex-wrap items-center gap-1.5"
+          >
+            {(['all', 'new', 'in_progress', 'resolved', 'closed'] as const).map((f) => {
+              const active = filter === f;
               return (
-                <motion.article
-                  key={r.id}
-                  layout
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  transition={{ duration: 0.18 }}
-                  className="group rounded-2xl border border-border bg-surface-2 p-4 transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-soft"
+                <button
+                  key={f}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => setFilter(f)}
+                  className={cn(
+                    'rounded-full border px-3 py-1 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                    active
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border bg-surface text-muted-foreground hover:border-primary/40 hover:text-foreground'
+                  )}
                 >
-                  <div className="flex items-start gap-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                      <Icon className="h-5 w-5" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono text-[11px] font-semibold text-primary">
-                          {caseCodeFromUuid(r.id)}
-                        </span>
-                        <span className="rounded bg-surface px-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
-                          {r.request_type.replace('_', ' ')}
-                        </span>
-                        {r.priority && r.priority !== 'normal' && (
-                          <span
-                            className={cn(
-                              'rounded-full border px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider',
-                              r.priority === 'urgent' &&
-                                'border-destructive/40 bg-destructive/10 text-destructive',
-                              r.priority === 'high' &&
-                                'border-accent/40 bg-accent/10 text-accent',
-                              r.priority === 'low' && 'border-border text-muted-foreground'
-                            )}
-                          >
-                            {r.priority}
-                          </span>
-                        )}
-                        <select
-                          value={r.status}
-                          onChange={(e) => changeStatus(r.id, e.target.value as Status)}
-                          disabled={pendingId === r.id}
-                          aria-label={t('changeStatus')}
-                          className={cn(
-                            'ml-auto cursor-pointer rounded-full border px-2.5 py-1 text-[11px] font-medium uppercase tracking-wider transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-wait',
-                            STATUS_TONE[r.status]
-                          )}
-                        >
-                          <option value="new">{t('statusNew')}</option>
-                          <option value="in_progress">{t('statusInProgress')}</option>
-                          <option value="resolved">{t('statusResolved')}</option>
-                          <option value="closed">{t('statusClosed')}</option>
-                        </select>
-                      </div>
-                      <h3 className="mt-2 truncate text-sm font-semibold text-foreground">
-                        {r.title}
-                      </h3>
-                      {r.description && (
-                        <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-                          {r.description}
-                        </p>
-                      )}
-                      <div className="mt-2 flex items-center justify-between gap-2">
-                        <p className="text-[11px] text-muted-foreground">
-                          {r.resident_name ?? '—'} · {r.resident_contact ?? '—'} ·{' '}
-                          {relativeTime(r.created_at)}
-                        </p>
-                        <Link
-                          href={`/admin/requests/${r.id}`}
-                          className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium text-primary opacity-0 transition group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:underline"
-                        >
-                          {t('viewDetails')}
-                          <ArrowRight className="h-3 w-3" />
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                </motion.article>
+                  {t(FILTER_LABEL[f])}
+                </button>
               );
             })}
-          </AnimatePresence>
-        </div>
+          </div>
+
+          {/* Cards list */}
+          {filtered.length === 0 ? (
+            <div className="rounded-2xl border border-border bg-surface-2 p-12 text-center">
+              <ClipboardCheck className="mx-auto h-8 w-8 text-muted-foreground" />
+              <h3 className="mt-3 text-sm font-semibold text-foreground">{t('empty')}</h3>
+              <p className="mt-1 text-xs text-muted-foreground">{t('emptyHint')}</p>
+            </div>
+          ) : (
+            <div className="grid gap-3">
+              <AnimatePresence initial={false}>
+                {filtered.map((r) => {
+                  const Icon = TYPE_ICON[r.request_type] ?? ClipboardCheck;
+                  return (
+                    <motion.article
+                      key={r.id}
+                      layout
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.18 }}
+                      className="group rounded-2xl border border-border bg-surface-2 p-4 transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-soft"
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                          <Icon className="h-5 w-5" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-mono text-[11px] font-semibold text-primary">
+                              {caseCodeFromUuid(r.id)}
+                            </span>
+                            <span className="rounded bg-surface px-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                              {r.request_type.replace('_', ' ')}
+                            </span>
+                            {r.priority && r.priority !== 'normal' && (
+                              <span
+                                className={cn(
+                                  'rounded-full border px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider',
+                                  r.priority === 'urgent' &&
+                                    'border-destructive/40 bg-destructive/10 text-destructive',
+                                  r.priority === 'high' &&
+                                    'border-accent/40 bg-accent/10 text-accent',
+                                  r.priority === 'low' && 'border-border text-muted-foreground'
+                                )}
+                              >
+                                {r.priority}
+                              </span>
+                            )}
+                            <select
+                              value={r.status}
+                              onChange={(e) => changeStatus(r.id, e.target.value as Status)}
+                              disabled={pendingId === r.id}
+                              aria-label={t('changeStatus')}
+                              className={cn(
+                                'ml-auto cursor-pointer rounded-full border px-2.5 py-1 text-[11px] font-medium uppercase tracking-wider transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-wait',
+                                STATUS_TONE[r.status]
+                              )}
+                            >
+                              <option value="new">{t('statusNew')}</option>
+                              <option value="in_progress">{t('statusInProgress')}</option>
+                              <option value="resolved">{t('statusResolved')}</option>
+                              <option value="closed">{t('statusClosed')}</option>
+                            </select>
+                          </div>
+                          <h3 className="mt-2 truncate text-sm font-semibold text-foreground">
+                            {r.title}
+                          </h3>
+                          {r.description && (
+                            <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                              {r.description}
+                            </p>
+                          )}
+                          <div className="mt-2 flex items-center justify-between gap-2">
+                            <p className="text-[11px] text-muted-foreground">
+                              {r.resident_name ?? '—'} · {r.resident_contact ?? '—'} ·{' '}
+                              <TimeAgo iso={r.created_at} />
+                            </p>
+                            <Link
+                              href={`/admin/requests/${r.id}`}
+                              className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium text-primary opacity-0 transition group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:underline"
+                            >
+                              {t('viewDetails')}
+                              <ArrowRight className="h-3 w-3" />
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.article>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
+          )}
+        </>
       )}
     </>
   );

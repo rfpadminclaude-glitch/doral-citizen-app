@@ -10,8 +10,10 @@ import {
   LayoutDashboard,
   Library,
   LogOut,
+  Map as MapIcon,
   Megaphone,
   MessageSquare,
+  Users,
   X
 } from 'lucide-react';
 import Link from 'next/link';
@@ -26,6 +28,8 @@ export type AdminNavKey =
   | 'dashboard'
   | 'conversations'
   | 'requests'
+  | 'gis'
+  | 'citizens'
   | 'knowledge'
   | 'announcements'
   | 'analytics'
@@ -43,6 +47,8 @@ const ITEMS: Item[] = [
   { key: 'dashboard', href: '/admin', icon: LayoutDashboard },
   { key: 'conversations', href: '/admin/conversations', icon: MessageSquare },
   { key: 'requests', href: '/admin/requests', icon: FileWarning },
+  { key: 'gis', href: '/admin/gis', icon: MapIcon },
+  { key: 'citizens', href: '/admin/citizens', icon: Users },
   { key: 'knowledge', href: '/admin/knowledge', icon: Library },
   { key: 'announcements', href: '/admin/announcements', icon: Megaphone },
   { key: 'analytics', href: '/admin/analytics', icon: BarChart3 },

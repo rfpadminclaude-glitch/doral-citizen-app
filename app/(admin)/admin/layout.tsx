@@ -24,6 +24,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     dashboard: t('dashboard'),
     conversations: t('conversations'),
     requests: t('requests'),
+    gis: t('gis'),
+    citizens: t('citizens'),
     knowledge: t('knowledge'),
     announcements: t('announcements'),
     analytics: t('analytics'),

@@ -11,7 +11,8 @@ export function relativeTime(iso: string | null | undefined, now: Date = new Dat
   if (hr < 24) return `${hr} hr ago`;
   const day = Math.round(hr / 24);
   if (day < 7) return `${day}d ago`;
-  return new Date(iso).toLocaleDateString();
+  // Explicit 'en-US' so output is deterministic on server + client (prevents hydration mismatch).
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 export const sentimentClass: Record<string, string> = {

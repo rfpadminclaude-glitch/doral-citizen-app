@@ -19,7 +19,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useState, useTransition } from 'react';
-import { caseCodeFromUuid, relativeTime } from '@/lib/admin/format';
+import { caseCodeFromUuid } from '@/lib/admin/format';
+import { TimeAgo } from '@/components/admin/TimeAgo';
 import { cn } from '@/lib/utils';
 
 type Status = 'new' | 'in_progress' | 'resolved' | 'closed';
@@ -190,8 +191,8 @@ export function RequestDetailClient({
               {request.resident_name ?? '—'} · {request.resident_contact ?? '—'}
             </p>
             <p className="text-[11px] text-muted-foreground">
-              {t('createdAt')} {relativeTime(request.created_at)} · {t('updatedAt')}{' '}
-              {relativeTime(request.updated_at)}
+              {t('createdAt')} <TimeAgo iso={request.created_at} /> · {t('updatedAt')}{' '}
+              <TimeAgo iso={request.updated_at} />
             </p>
           </div>
         </div>
@@ -309,7 +310,7 @@ export function RequestDetailClient({
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-medium text-foreground">{renderAction(h)}</p>
                   <p className="text-[10px] text-muted-foreground">
-                    {relativeTime(h.created_at)}
+                    <TimeAgo iso={h.created_at} />
                   </p>
                 </div>
               </li>

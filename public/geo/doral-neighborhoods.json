@@ -1,0 +1,132 @@
+{
+  "type": "FeatureCollection",
+  "_readme": "Hand-drawn approximate polygons for Doral's informal neighborhoods. Feature order is meaningful: tagNeighborhood() returns the FIRST matching polygon, so list more specific neighborhoods first if any overlap. Coords are [lng, lat]. Bounding box is roughly the city limits (25.78-25.86 N, -80.40 to -80.30 W).",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "slug": "doral-isles",
+        "name": "Doral Isles",
+        "centroid": [-80.380, 25.845]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-80.400, 25.830],
+          [-80.360, 25.830],
+          [-80.360, 25.860],
+          [-80.400, 25.860],
+          [-80.400, 25.830]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "slug": "trails-of-doral",
+        "name": "Trails of Doral",
+        "centroid": [-80.340, 25.845]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-80.360, 25.830],
+          [-80.300, 25.830],
+          [-80.300, 25.860],
+          [-80.360, 25.860],
+          [-80.360, 25.830]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "slug": "doral-cay",
+        "name": "Doral Cay",
+        "centroid": [-80.385, 25.820]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-80.400, 25.810],
+          [-80.370, 25.810],
+          [-80.370, 25.830],
+          [-80.400, 25.830],
+          [-80.400, 25.810]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "slug": "doral-park",
+        "name": "Doral Park",
+        "centroid": [-80.355, 25.820]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-80.370, 25.810],
+          [-80.340, 25.810],
+          [-80.340, 25.830],
+          [-80.370, 25.830],
+          [-80.370, 25.810]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "slug": "costa-del-sol",
+        "name": "Costa del Sol",
+        "centroid": [-80.320, 25.820]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-80.340, 25.810],
+          [-80.300, 25.810],
+          [-80.300, 25.830],
+          [-80.340, 25.830],
+          [-80.340, 25.810]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "slug": "doral-west",
+        "name": "Doral West",
+        "centroid": [-80.380, 25.795]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-80.400, 25.780],
+          [-80.360, 25.780],
+          [-80.360, 25.810],
+          [-80.400, 25.810],
+          [-80.400, 25.780]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "slug": "downtown-doral",
+        "name": "Downtown Doral",
+        "centroid": [-80.330, 25.795]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-80.360, 25.780],
+          [-80.300, 25.780],
+          [-80.300, 25.810],
+          [-80.360, 25.810],
+          [-80.360, 25.780]
+        ]]
+      }
+    }
+  ]
+}

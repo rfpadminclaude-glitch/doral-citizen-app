@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
+import { listNeighborhoods } from '@/lib/geo/neighborhoods';
 import { RequestsClient } from './RequestsClient';
 
 export const dynamic = 'force-dynamic';
@@ -9,15 +10,16 @@ export default async function ServiceRequestsPage() {
   const { data: requests } = await sb
     .from('service_requests')
     .select(
-      'id, request_type, title, description, status, priority, resident_name, resident_contact, created_at, updated_at'
+      'id, request_type, title, description, status, priority, resident_name, resident_contact, lat, lng, neighborhood_slug, address_line, created_at, updated_at'
     )
     .order('created_at', { ascending: false })
     .limit(200);
 
   const t = await getTranslations('admin.requests');
+  const neighborhoods = listNeighborhoods();
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6">
       <header>
         <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
           {t('subtitleKicker')}
@@ -38,9 +40,14 @@ export default async function ServiceRequestsPage() {
           priority: r.priority as 'low' | 'normal' | 'high' | 'urgent',
           resident_name: r.resident_name,
           resident_contact: r.resident_contact,
+          lat: r.lat,
+          lng: r.lng,
+          neighborhood_slug: r.neighborhood_slug,
+          address_line: r.address_line,
           created_at: r.created_at,
           updated_at: r.updated_at
         }))}
+        neighborhoods={neighborhoods}
       />
     </div>
   );
