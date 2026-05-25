@@ -19,6 +19,10 @@
     "langEs": "Español",
     "online": "Online",
     "newChat": "New chat",
+    "loadingConversation": "Loading conversation…",
+    "userMessageAria": "Your message",
+    "assistantMessageAria": "Assistant reply",
+    "typingIndicator": "Assistant is typing",
     "profile": "Profile",
     "history": "History",
     "copyMessage": "Copy message",
@@ -52,6 +56,20 @@
       "placeholder": "Tell us what went wrong (optional)",
       "send": "Send",
       "cancel": "Cancel"
+    },
+    "historyPanel": {
+      "title": "Chat history",
+      "newChat": "New chat",
+      "searchAria": "Search conversations",
+      "searchPlaceholder": "Search conversations…",
+      "empty": "No conversations yet. Start a new one above.",
+      "noMatches": "No matches.",
+      "storedLocally": "Stored in this browser only.",
+      "closeHistory": "Close history",
+      "deleteConversation": "Delete conversation",
+      "deleteConfirm": "Delete this conversation?",
+      "messageCount": "{count, plural, one {# msg} other {# msgs}}",
+      "newChatFallback": "New chat"
     },
     "profileDrawer": {
       "title": "Your profile",

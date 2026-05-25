@@ -647,7 +647,7 @@ export default function ChatWidget() {
       >
         {loadingSession && (
           <div className="text-center text-xs text-muted-foreground" aria-live="polite">
-            Loading conversation…
+            {t('loadingConversation')}
           </div>
         )}
 
@@ -773,7 +773,7 @@ export default function ChatWidget() {
                   ? 'self-end bg-primary text-primary-foreground'
                   : 'self-start border border-border bg-surface text-foreground'
               )}
-              aria-label={m.role === 'user' ? 'Your message' : 'Assistant reply'}
+              aria-label={m.role === 'user' ? t('userMessageAria') : t('assistantMessageAria')}
             >
               <div className="whitespace-pre-wrap">{renderWithCitations(m.content, m.sources)}</div>
               {m.role === 'assistant' && m.sources && m.sources.length > 0 && (
@@ -888,9 +888,9 @@ export default function ChatWidget() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="self-start rounded-2xl border border-border bg-surface px-4 py-2.5"
-            aria-label="Assistant is typing"
+            aria-label={t('typingIndicator')}
           >
-            <span className="sr-only">Assistant is typing</span>
+            <span className="sr-only">{t('typingIndicator')}</span>
             <span className="flex items-center gap-1" aria-hidden="true">
               <span className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-typing-bounce [animation-delay:0ms]" />
               <span className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-typing-bounce [animation-delay:140ms]" />

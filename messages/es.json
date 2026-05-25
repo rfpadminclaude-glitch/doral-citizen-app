@@ -19,6 +19,10 @@
     "langEs": "Español",
     "online": "En línea",
     "newChat": "Chat nuevo",
+    "loadingConversation": "Cargando conversación…",
+    "userMessageAria": "Tu mensaje",
+    "assistantMessageAria": "Respuesta del asistente",
+    "typingIndicator": "El asistente está escribiendo",
     "profile": "Perfil",
     "history": "Historial",
     "copyMessage": "Copiar mensaje",
@@ -52,6 +56,20 @@
       "placeholder": "Cuéntanos qué salió mal (opcional)",
       "send": "Enviar",
       "cancel": "Cancelar"
+    },
+    "historyPanel": {
+      "title": "Historial de chat",
+      "newChat": "Nuevo chat",
+      "searchAria": "Buscar conversaciones",
+      "searchPlaceholder": "Buscar conversaciones…",
+      "empty": "Aún no hay conversaciones. Empieza una arriba.",
+      "noMatches": "Sin resultados.",
+      "storedLocally": "Guardado solo en este navegador.",
+      "closeHistory": "Cerrar historial",
+      "deleteConversation": "Eliminar conversación",
+      "deleteConfirm": "¿Eliminar esta conversación?",
+      "messageCount": "{count, plural, one {# mensaje} other {# mensajes}}",
+      "newChatFallback": "Nuevo chat"
     },
     "profileDrawer": {
       "title": "Tu perfil",
